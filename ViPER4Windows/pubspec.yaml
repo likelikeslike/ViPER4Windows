@@ -1,0 +1,31 @@
+name: viper4windows
+description: ViPER4Windows Audio Effects
+publish_to: "none"
+version: 1.0.0
+
+environment:
+  sdk: ">=3.11.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  fluent_ui: 4.15.1
+  ffi: 2.2.0
+  window_manager: 0.5.1
+  system_tray: 2.0.3
+  provider: 6.1.5+1
+  file_picker: 11.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: 6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/app_icon.ico
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter.ttf
