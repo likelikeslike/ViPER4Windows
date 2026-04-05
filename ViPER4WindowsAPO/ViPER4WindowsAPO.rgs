@@ -1,0 +1,13 @@
+HKCR
+{
+    NoRemove CLSID
+    {
+        ForceRemove {B5A2C3D4-E6F7-4A8B-9C0D-1E2F3A4B5C6D} = s 'ViPER4Windows MFX'
+        {
+            InprocServer32 = s '%MODULE%'
+            {
+                val ThreadingModel = s 'Both'
+            }
+        }
+    }
+}
