@@ -22,4 +22,4 @@ obj/
 *.nupkg
 *.pkg
 .DS_Store
-
+.vscode/

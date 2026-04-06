@@ -1,5 +1,5 @@
 import 'package:fluent_ui/fluent_ui.dart';
-import '../theme/app_colors.dart';
+import 'package:viper4windows/theme/app_colors.dart';
 
 class EffectCard extends StatelessWidget {
   final String title;
