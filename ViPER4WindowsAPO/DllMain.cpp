@@ -1,10 +1,10 @@
-#include "ViPERLog.h"
 #include <atlbase.h>
 #include <atlcom.h>
 #include <audioenginebaseapo.h>
 #include <initguid.h>
 
 #include "ViPER4WindowsAPO.h"
+#include "ViPERLog.h"
 
 class CViPER4WindowsModule : public CAtlDllModuleT<CViPER4WindowsModule> {};
 CViPER4WindowsModule _Module;

@@ -1,11 +1,12 @@
 #ifndef VIPER4WINDOWS_LOG_H
 #define VIPER4WINDOWS_LOG_H
 
-#include <strsafe.h>
-#include <cstdio>
 #include <cstdarg>
+#include <cstdio>
+#include <strsafe.h>
+#include <windows.h>
 
-static void ViPERLog(const char* fmt, ...) {
+static void ViPERLog(const char *fmt, ...) {
     char buf[1024];
     va_list args;
     va_start(args, fmt);
@@ -19,7 +20,7 @@ static void ViPERLog(const char* fmt, ...) {
         dirCreated = true;
     }
 
-    FILE* f = nullptr;
+    FILE *f = nullptr;
     fopen_s(&f, "C:\\ProgramData\\ViPER4Windows\\viper_apo.log", "a");
     if (f) {
         fputs(buf, f);

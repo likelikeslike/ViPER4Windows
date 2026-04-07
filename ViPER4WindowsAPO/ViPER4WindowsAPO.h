@@ -3,11 +3,10 @@
 #include <BaseAudioProcessingObject.h>
 #include <atlbase.h>
 #include <atlcom.h>
-#include <audioenginebaseapo.h>
-#include <mmdeviceapi.h>
-
 #include <atomic>
+#include <audioenginebaseapo.h>
 #include <memory>
+#include <mmdeviceapi.h>
 #include <mutex>
 #include <vector>
 

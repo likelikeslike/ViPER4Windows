@@ -1,11 +1,12 @@
-#include "ViPER4WindowsAPO.h"
-#include "include/ViPERParams.h"
-#include "viper/ViPER.h"
 
 #include <chrono>
 #include <cstring>
 #pragma comment(lib, "advapi32.lib")
 
+#include "include/ViPERParams.h"
+#include "viper/ViPER.h"
+
+#include "ViPER4WindowsAPO.h"
 #include "ViPERLog.h"
 
 #define PARAM_FX_TYPE_SWITCH 0x10003
