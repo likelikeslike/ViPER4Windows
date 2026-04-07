@@ -179,7 +179,7 @@ class _ShellState extends State<_Shell> with WindowListener {
             body: const SpatialPage(),
           ),
           PaneItem(
-            icon: Icon(FluentIcons.heart, size: 16.0),
+            icon: Icon(FluentIcons.speakers, size: 16.0),
             title: const Text('Dynamics'),
             body: const DynamicsPage(),
           ),
