@@ -176,8 +176,11 @@ class SharedMemoryService {
     }
   }
 
-  (int sampleRate, int processTimeMs) readApoStatus() {
-    if (_pView == null || _pView == nullptr) return (0, 0);
+  ({int sampleRate, int processTimeMs, String version, String arch})
+  readApoStatus() {
+    if (_pView == null || _pView == nullptr) {
+      return (sampleRate: 0, processTimeMs: 0, version: '', arch: '');
+    }
 
     final bytes = _pView!.cast<Uint8>();
     final bd = ByteData(8);
@@ -193,7 +196,28 @@ class SharedMemoryService {
     }
     final processTimeMs = bd2.getUint64(0, Endian.little);
 
-    return (sampleRate, processTimeMs);
+    final versionBytes = <int>[];
+    for (var i = 0; i < SharedParamsLayout.apoVersionStringLen; i++) {
+      final b = bytes[SharedParamsLayout.apoVersionString + i];
+      if (b == 0) break;
+      versionBytes.add(b);
+    }
+    final version = String.fromCharCodes(versionBytes);
+
+    final archBytes = <int>[];
+    for (var i = 0; i < SharedParamsLayout.apoArchStringLen; i++) {
+      final b = bytes[SharedParamsLayout.apoArchString + i];
+      if (b == 0) break;
+      archBytes.add(b);
+    }
+    final arch = String.fromCharCodes(archBytes);
+
+    return (
+      sampleRate: sampleRate,
+      processTimeMs: processTimeMs,
+      version: version,
+      arch: arch,
+    );
   }
 
   void close() {

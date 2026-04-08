@@ -109,7 +109,8 @@ struct ViPERSharedParams {
 
     uint32_t apoSampleRate;
     uint64_t apoProcessTimeMs;
-    uint32_t _reserved[1];
+    char apoVersionString[32];
+    char apoArchString[16];
 };
 #pragma pack(pop)
 

@@ -119,7 +119,7 @@ class _DriverPageState extends State<DriverPage> {
         const SizedBox(height: 12),
         _buildEndpointsCard(),
         const SizedBox(height: 12),
-        _buildInfoCard(),
+        _buildInfoCard(state),
       ],
     );
   }
@@ -297,7 +297,7 @@ class _DriverPageState extends State<DriverPage> {
     );
   }
 
-  Widget _buildInfoCard() {
+  Widget _buildInfoCard(ViperState state) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -317,9 +317,12 @@ class _DriverPageState extends State<DriverPage> {
             ),
           ),
           const SizedBox(height: 12),
-          _infoRow('Version', '1.0.0'),
+          _infoRow(
+            'Version',
+            state.apoVersion.isEmpty ? '-' : state.apoVersion,
+          ),
           const Divider(),
-          _infoRow('Architecture', 'x64'),
+          _infoRow('Architecture', state.apoArch.isEmpty ? '-' : state.apoArch),
           const Divider(),
           _infoRow('APO Type', 'MFX (Component)'),
           const Divider(),

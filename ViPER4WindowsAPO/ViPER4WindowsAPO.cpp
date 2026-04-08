@@ -1,7 +1,6 @@
 
 #include <chrono>
 #include <cstring>
-#pragma comment(lib, "advapi32.lib")
 
 #include "include/ViPERParams.h"
 #include "viper/ViPER.h"
@@ -9,8 +8,24 @@
 #include "ViPER4WindowsAPO.h"
 #include "ViPERLog.h"
 
+#define VIPER_STRINGIFY2(x) #x
+#define VIPER_STRINGIFY(x) VIPER_STRINGIFY2(x)
+
+#if defined(__aarch64__) || defined(_M_ARM64)
+static constexpr char kArch[] = "ARM64";
+#elif defined(__arm__) || defined(_M_ARM)
+static constexpr char kArch[] = "ARM";
+#elif defined(__x86_64__) || defined(_M_X64) || defined(_M_AMD64)
+static constexpr char kArch[] = "x86_64";
+#elif defined(__i386__) || defined(_M_IX86)
+static constexpr char kArch[] = "x86";
+#else
+static constexpr char kArch[] = "unknown";
+#endif
+
 #define PARAM_FX_TYPE_SWITCH 0x10003
 
+#pragma comment(lib, "advapi32.lib")
 #pragma comment(lib, "avrt.lib")
 
 const CRegAPOProperties<1> CViPER4WindowsMFX::RegProperties(
@@ -457,6 +472,19 @@ void CViPER4WindowsMFX::TryOpenSharedMemory() {
         ));
         if (mSharedParams) {
             mSharedParams->apoSampleRate = mSampleRate;
+            snprintf(
+                mSharedParams->apoVersionString,
+                sizeof(mSharedParams->apoVersionString),
+                "%s(%s)",
+                VERSION_NAME,
+                VIPER_STRINGIFY(VERSION_CODE)
+            );
+            strncpy_s(
+                mSharedParams->apoArchString,
+                sizeof(mSharedParams->apoArchString),
+                kArch,
+                _TRUNCATE
+            );
             mLastSequence.store(UINT32_MAX, std::memory_order_relaxed);
             ViPERLog("[ViPER] TryOpenSharedMemory: SUCCESS shm=%p\n", mSharedParams);
         } else {

@@ -487,6 +487,8 @@ class ViperState extends ChangeNotifier {
   bool _driverInstalled = false;
   bool _apoProcessing = false;
   int _apoSampleRate = 0;
+  String _apoVersion = '';
+  String _apoArch = '';
 
   ViperState({
     required SharedMemoryService shm,
@@ -613,6 +615,8 @@ class ViperState extends ChangeNotifier {
   bool get apoConnected => _driverInstalled;
   bool get apoProcessing => _apoProcessing;
   int get apoSampleRate => _apoSampleRate;
+  String get apoVersion => _apoVersion;
+  String get apoArch => _apoArch;
   List<String> get ddcFiles => _ddcFiles;
   List<String> get kernelFiles => _kernelFiles;
   List<String> get presetFiles => _presetFiles;
@@ -1062,19 +1066,23 @@ class ViperState extends ChangeNotifier {
   }
 
   void _refreshApoStatus() {
-    final (sampleRate, processTimeMs) = _shm.readApoStatus();
+    final status = _shm.readApoStatus();
     final wasInstalled = _driverInstalled;
     final wasProcessing = _apoProcessing;
     final wasSampleRate = _apoSampleRate;
+    final wasVersion = _apoVersion;
 
     _driverInstalled = _checkDriverInstalled();
-    _apoSampleRate = sampleRate;
+    _apoSampleRate = status.sampleRate;
+    _apoVersion = status.version;
+    _apoArch = status.arch;
 
-    if (processTimeMs == 0) {
-      _apoProcessing = sampleRate > 0;
+    if (status.processTimeMs == 0) {
+      _apoProcessing = status.sampleRate > 0;
     } else {
       final now = DateTime.now().millisecondsSinceEpoch;
-      _apoProcessing = now >= processTimeMs && (now - processTimeMs) < 5000;
+      _apoProcessing =
+          now >= status.processTimeMs && (now - status.processTimeMs) < 5000;
     }
 
     final detected = _deviceDetection.detectOutputType();
@@ -1082,7 +1090,8 @@ class ViperState extends ChangeNotifier {
 
     if (_driverInstalled != wasInstalled ||
         _apoProcessing != wasProcessing ||
-        _apoSampleRate != wasSampleRate) {
+        _apoSampleRate != wasSampleRate ||
+        _apoVersion != wasVersion) {
       notifyListeners();
     }
   }

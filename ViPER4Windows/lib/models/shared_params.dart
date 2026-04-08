@@ -107,9 +107,13 @@ class SharedParamsLayout {
 
   static const apoSampleRate = 432;
   static const apoProcessTimeMs = 436;
+  static const apoVersionString = 444;
+  static const apoVersionStringLen = 32;
+  static const apoArchString = 476;
+  static const apoArchStringLen = 16;
 
   static const uiWriteSize = 432;
-  static const totalSize = 448;
+  static const totalSize = 492;
 }
 
 class SharedParamsSerializer {
