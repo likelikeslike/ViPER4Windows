@@ -9,6 +9,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   fluent_ui: 4.15.1
   ffi: 2.2.0
   window_manager: 0.5.1
@@ -22,6 +24,7 @@ dev_dependencies:
   flutter_lints: 6.0.0
 
 flutter:
+  generate: true
   uses-material-design: true
   assets:
     - assets/app_icon.ico
