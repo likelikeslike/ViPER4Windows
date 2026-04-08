@@ -178,11 +178,6 @@ class ValueMappings {
     ('pittvandewitt flavor #3', '140;5400;40;60;0;0'),
   ];
 
-  static const bassModeLabels = ['Natural', 'Pure Bass', 'Subwoofer'];
-  static const clarityModeLabels = ['Natural', 'OZone', 'XHiFi'];
-  static const analogXModeLabels = ['Mild', 'Medium', 'Strong'];
-  static const cureCrossfeedLabels = ['Mild', 'Medium', 'Strong'];
-
   static int safeIndex(List<int> arr, int idx) {
     if (idx >= 0 && idx < arr.length) return arr[idx];
     return arr.isNotEmpty ? arr[0] : 0;

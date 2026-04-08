@@ -1,8 +1,6 @@
 {
   "@@locale": "en",
-
   "appTitle": "ViPER4Windows",
-
   "navOutput": "Output",
   "navEqualizer": "Equalizer",
   "navTone": "Tone",
@@ -10,13 +8,11 @@
   "navDynamics": "Dynamics",
   "navPresets": "Presets",
   "navDriverStatus": "Driver Status",
-
   "master": "Master",
   "headphone": "Headphone",
   "speaker": "Speaker",
   "trayShow": "Show",
   "trayQuit": "Quit",
-
   "mode": "Mode",
   "frequency": "Frequency",
   "gain": "Gain",
@@ -37,16 +33,33 @@
   "off": "Off",
   "presetName": "Preset name",
   "errorGeneric": "Error: {message}",
-  "@errorGeneric": { "placeholders": { "message": { "type": "String" } } },
-
+  "@errorGeneric": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
   "pageMasterLimiter": "Master Limiter",
   "outputGain": "Output Gain",
   "outputPan": "Output Pan",
   "panCenter": "Center",
   "panRight": "R {value}",
-  "@panRight": { "placeholders": { "value": { "type": "int" } } },
+  "@panRight": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      }
+    }
+  },
   "panLeft": "L {value}",
-  "@panLeft": { "placeholders": { "value": { "type": "int" } } },
+  "@panLeft": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      }
+    }
+  },
   "thresholdLimit": "Threshold Limit",
   "playbackGainControl": "Playback Gain Control",
   "maxGain": "Max Gain",
@@ -57,19 +70,17 @@
   "importConvolverKernel": "Import Convolver Kernel",
   "crossChannel": "Cross Channel",
   "speakerOptimization": "Speaker Optimization",
-
   "pageEqualizer": "Equalizer",
   "firEqualizer": "FIR Equalizer",
   "bands": "Bands",
   "resetToFlat": "Reset to Flat",
   "saveEqPreset": "Save EQ Preset",
-
   "pageTone": "Tone",
   "viperBass": "ViPER Bass",
   "bassNatural": "Natural",
   "bassPureBass": "Pure Bass",
   "bassSubwoofer": "Subwoofer",
-  "fadeIn": "Fade-in",
+  "antiPop": "Fade-in",
   "viperBassMono": "ViPER Bass Mono",
   "viperClarity": "ViPER Clarity",
   "clarityNatural": "Natural",
@@ -82,7 +93,6 @@
   "analogXMild": "Mild",
   "analogXMedium": "Medium",
   "analogXStrong": "Strong",
-
   "pageSpatial": "Spatial",
   "fieldSurround": "Field Surround",
   "widening": "Widening",
@@ -99,7 +109,6 @@
   "cureMild": "Mild",
   "cureMedium": "Medium",
   "cureStrong": "Strong",
-
   "pageDynamics": "Dynamics",
   "dynamicSystem": "Dynamic System",
   "xLowFreq": "X Low Freq",
@@ -125,15 +134,22 @@
   "crest": "Crest",
   "adapt": "Adapt",
   "noClip": "No Clip",
-
   "pagePresets": "Presets",
   "saveCurrentSettings": "Save Current Settings",
   "selectPreset": "Select preset...",
   "loadManage": "Load / Manage",
   "importPreset": "Import Preset",
   "presetLoadedTo": "Loaded \"{name}\" to {target}",
-  "@presetLoadedTo": { "placeholders": { "name": { "type": "String" }, "target": { "type": "String" } } },
-
+  "@presetLoadedTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "target": {
+        "type": "String"
+      }
+    }
+  },
   "pageDriverStatus": "Driver Status",
   "apoStatus": "APO Status",
   "driver": "Driver",
@@ -165,9 +181,14 @@
   "ipc": "IPC",
   "sharedMemory": "Shared Memory",
   "mfxComponent": "MFX (Component)",
-
   "statusApoActive": "APO active ({sampleRate} Hz)",
-  "@statusApoActive": { "placeholders": { "sampleRate": { "type": "int" } } },
+  "@statusApoActive": {
+    "placeholders": {
+      "sampleRate": {
+        "type": "int"
+      }
+    }
+  },
   "statusApoIdle": "APO connected, idle",
   "statusApoNotFound": "APO not found"
 }

@@ -1,5 +1,6 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:provider/provider.dart';
+import 'package:viper4windows/l10n/app_localizations.dart';
 import 'package:viper4windows/models/value_mappings.dart';
 import 'package:viper4windows/models/viper_state.dart';
 import 'package:viper4windows/theme/app_colors.dart';
@@ -12,12 +13,13 @@ class SpatialPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<ViperState>();
+    final l = S.of(context)!;
 
     return ScaffoldPage.scrollable(
       padding: const EdgeInsets.all(20),
       children: [
         Text(
-          'Spatial',
+          l.pageSpatial,
           style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.w700,
@@ -25,18 +27,18 @@ class SpatialPage extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        _buildFieldSurround(state),
-        _buildDiffSurround(state),
-        _buildVhe(state),
-        _buildReverberation(state),
-        _buildCure(state),
+        _buildFieldSurround(state, l),
+        _buildDiffSurround(state, l),
+        _buildVhe(state, l),
+        _buildReverberation(state, l),
+        _buildCure(state, l),
       ],
     );
   }
 
-  Widget _buildFieldSurround(ViperState state) {
+  Widget _buildFieldSurround(ViperState state, S l) {
     return EffectCard(
-      title: 'Field Surround',
+      title: l.fieldSurround,
       masterEnabled: state.masterEnabled,
       enabled: state.fieldSurroundEnabled,
       onToggle: (v) => state.fieldSurroundEnabled = v,
@@ -44,7 +46,7 @@ class SpatialPage extends StatelessWidget {
         children: [
           const SizedBox(height: 8),
           LabeledSlider(
-            label: 'Widening',
+            label: l.widening,
             value: state.fieldSurroundWidening.toDouble(),
             min: 0,
             max: 8,
@@ -52,7 +54,7 @@ class SpatialPage extends StatelessWidget {
             onChanged: (v) => state.fieldSurroundWidening = v.round(),
           ),
           LabeledSlider(
-            label: 'Mid Image',
+            label: l.midImage,
             value: state.fieldSurroundMidImage.toDouble(),
             min: 0,
             max: 10,
@@ -60,7 +62,7 @@ class SpatialPage extends StatelessWidget {
             onChanged: (v) => state.fieldSurroundMidImage = v.round(),
           ),
           LabeledSlider(
-            label: 'Depth',
+            label: l.depth,
             value: state.fieldSurroundDepth.toDouble(),
             min: 0,
             max: 10,
@@ -72,9 +74,9 @@ class SpatialPage extends StatelessWidget {
     );
   }
 
-  Widget _buildDiffSurround(ViperState state) {
+  Widget _buildDiffSurround(ViperState state, S l) {
     return EffectCard(
-      title: 'Differential Surround',
+      title: l.differentialSurround,
       masterEnabled: state.masterEnabled,
       enabled: state.diffSurroundEnabled,
       onToggle: (v) => state.diffSurroundEnabled = v,
@@ -82,7 +84,7 @@ class SpatialPage extends StatelessWidget {
         children: [
           const SizedBox(height: 8),
           LabeledSlider(
-            label: 'Delay',
+            label: l.delay,
             value: state.diffSurroundDelay.toDouble(),
             min: 0,
             max: 19,
@@ -102,9 +104,9 @@ class SpatialPage extends StatelessWidget {
     );
   }
 
-  Widget _buildVhe(ViperState state) {
+  Widget _buildVhe(ViperState state, S l) {
     return EffectCard(
-      title: 'Headphone Surround+',
+      title: l.headphoneSurroundPlus,
       masterEnabled: state.masterEnabled,
       enabled: state.vheEnabled,
       onToggle: (v) => state.vheEnabled = v,
@@ -112,7 +114,7 @@ class SpatialPage extends StatelessWidget {
         children: [
           const SizedBox(height: 8),
           LabeledSlider(
-            label: 'Quality',
+            label: l.quality,
             value: state.vheQuality.toDouble(),
             min: 0,
             max: 4,
@@ -124,9 +126,9 @@ class SpatialPage extends StatelessWidget {
     );
   }
 
-  Widget _buildReverberation(ViperState state) {
+  Widget _buildReverberation(ViperState state, S l) {
     return EffectCard(
-      title: 'Reverberation',
+      title: l.reverberation,
       masterEnabled: state.masterEnabled,
       enabled: state.reverberationEnabled,
       onToggle: (v) => state.reverberationEnabled = v,
@@ -134,7 +136,7 @@ class SpatialPage extends StatelessWidget {
         children: [
           const SizedBox(height: 8),
           LabeledSlider(
-            label: 'Room Size',
+            label: l.roomSize,
             value: state.reverberationRoomSize.toDouble(),
             min: 0,
             max: 10,
@@ -142,7 +144,7 @@ class SpatialPage extends StatelessWidget {
             onChanged: (v) => state.reverberationRoomSize = v.round(),
           ),
           LabeledSlider(
-            label: 'Width',
+            label: l.width,
             value: state.reverberationRoomWidth.toDouble(),
             min: 0,
             max: 10,
@@ -150,7 +152,7 @@ class SpatialPage extends StatelessWidget {
             onChanged: (v) => state.reverberationRoomWidth = v.round(),
           ),
           LabeledSlider(
-            label: 'Dampening',
+            label: l.dampening,
             value: state.reverberationRoomDampening.toDouble(),
             min: 0,
             max: 10,
@@ -158,7 +160,7 @@ class SpatialPage extends StatelessWidget {
             onChanged: (v) => state.reverberationRoomDampening = v.round(),
           ),
           LabeledSlider(
-            label: 'Wet Signal',
+            label: l.wetSignal,
             value: state.reverberationWetSignal.toDouble(),
             min: 0,
             max: 100,
@@ -167,7 +169,7 @@ class SpatialPage extends StatelessWidget {
             onChanged: (v) => state.reverberationWetSignal = v.round(),
           ),
           LabeledSlider(
-            label: 'Dry Signal',
+            label: l.drySignal,
             value: state.reverberationDrySignal.toDouble(),
             min: 0,
             max: 100,
@@ -180,9 +182,9 @@ class SpatialPage extends StatelessWidget {
     );
   }
 
-  Widget _buildCure(ViperState state) {
+  Widget _buildCure(ViperState state, S l) {
     return EffectCard(
-      title: 'Auditory System Protection',
+      title: l.auditorySystemProtection,
       masterEnabled: state.masterEnabled,
       enabled: state.cureEnabled,
       onToggle: (v) => state.cureEnabled = v,
@@ -191,23 +193,21 @@ class SpatialPage extends StatelessWidget {
           const SizedBox(height: 8),
           Row(
             children: [
-              const SizedBox(
+              SizedBox(
                 width: 100,
                 child: Text(
-                  'Preset',
+                  l.preset,
                   style: TextStyle(fontSize: 12, color: AppColors.subtitleText),
                 ),
               ),
               Expanded(
                 child: ComboBox<int>(
                   value: state.cureCrossfeedStrength,
-                  items: List.generate(
-                    ValueMappings.cureCrossfeedLabels.length,
-                    (i) => ComboBoxItem(
-                      value: i,
-                      child: Text(ValueMappings.cureCrossfeedLabels[i]),
-                    ),
-                  ),
+                  items: [
+                    ComboBoxItem(value: 0, child: Text(l.cureMild)),
+                    ComboBoxItem(value: 1, child: Text(l.cureMedium)),
+                    ComboBoxItem(value: 2, child: Text(l.cureStrong)),
+                  ],
                   onChanged: (v) {
                     if (v != null) state.cureCrossfeedStrength = v;
                   },

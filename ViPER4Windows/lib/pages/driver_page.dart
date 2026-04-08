@@ -1,5 +1,6 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:provider/provider.dart';
+import 'package:viper4windows/l10n/app_localizations.dart';
 import 'package:viper4windows/models/viper_state.dart';
 import 'package:viper4windows/services/apo_registration_service.dart';
 import 'package:viper4windows/services/file_logger.dart';
@@ -67,7 +68,7 @@ class _DriverPageState extends State<DriverPage> {
           context,
           builder: (ctx, close) {
             return InfoBar(
-              title: Text('Error: $e'),
+              title: Text(S.of(context)!.errorGeneric(e.toString())),
               severity: InfoBarSeverity.error,
               action: IconButton(
                 icon: const Icon(FluentIcons.clear),
@@ -81,33 +82,43 @@ class _DriverPageState extends State<DriverPage> {
     setState(() => _loading = false);
   }
 
-  Future<void> _registerAll() => _runRegistrationAction(
-    _registration.registerOnAllEndpoints,
-    'Registered on all endpoints. Audio service restarted. Reboot if effects do not work.',
-    'Registration failed.',
-  );
+  Future<void> _registerAll() {
+    final l = S.of(context)!;
+    return _runRegistrationAction(
+      _registration.registerOnAllEndpoints,
+      l.registerAllSuccess,
+      l.registrationFailed,
+    );
+  }
 
-  Future<void> _registerSingle(String endpointId) => _runRegistrationAction(
-    () => _registration.registerOnEndpoint(endpointId),
-    'Registered. Audio service restarted. Reboot if effects do not work.',
-    'Registration failed.',
-  );
+  Future<void> _registerSingle(String endpointId) {
+    final l = S.of(context)!;
+    return _runRegistrationAction(
+      () => _registration.registerOnEndpoint(endpointId),
+      l.registerSingleSuccess,
+      l.registrationFailed,
+    );
+  }
 
-  Future<void> _unregisterSingle(String endpointId) => _runRegistrationAction(
-    () => _registration.unregisterEndpoint(endpointId),
-    'Unregistered. Audio service restarted. Reboot if effects persist.',
-    'Unregistration failed.',
-  );
+  Future<void> _unregisterSingle(String endpointId) {
+    final l = S.of(context)!;
+    return _runRegistrationAction(
+      () => _registration.unregisterEndpoint(endpointId),
+      l.unregisterSuccess,
+      l.unregistrationFailed,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final state = context.watch<ViperState>();
+    final l = S.of(context)!;
 
     return ScaffoldPage.scrollable(
       padding: const EdgeInsets.all(20),
       children: [
         Text(
-          'Driver Status',
+          l.pageDriverStatus,
           style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.w700,
@@ -115,16 +126,16 @@ class _DriverPageState extends State<DriverPage> {
           ),
         ),
         const SizedBox(height: 16),
-        _buildStatusCard(state),
+        _buildStatusCard(state, l),
         const SizedBox(height: 12),
-        _buildEndpointsCard(),
+        _buildEndpointsCard(l),
         const SizedBox(height: 12),
-        _buildInfoCard(state),
+        _buildInfoCard(l, state),
       ],
     );
   }
 
-  Widget _buildStatusCard(ViperState state) {
+  Widget _buildStatusCard(ViperState state, S l) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -136,7 +147,7 @@ class _DriverPageState extends State<DriverPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'APO Status',
+            l.apoStatus,
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
@@ -145,44 +156,44 @@ class _DriverPageState extends State<DriverPage> {
           ),
           const SizedBox(height: 12),
           _statusRow(
-            'Driver',
-            state.apoConnected ? 'Installed' : 'Not Found',
+            l.driver,
+            state.apoConnected ? l.installed : l.notFound,
             dotColor: state.apoConnected
                 ? const Color(0xFF00E676)
                 : const Color(0xFFFF5252),
           ),
           const Divider(),
           _statusRow(
-            'Streaming',
-            state.apoProcessing ? 'Active' : 'Inactive',
+            l.streaming,
+            state.apoProcessing ? l.active : l.inactive,
             dotColor: state.apoProcessing
                 ? const Color(0xFF00E676)
                 : const Color(0xFFFFD740),
           ),
           const Divider(),
           _statusRow(
-            'Sampling Rate',
-            state.apoSampleRate > 0 ? '${state.apoSampleRate} Hz' : 'Unknown',
+            l.samplingRate,
+            state.apoSampleRate > 0 ? '${state.apoSampleRate} Hz' : l.unknown,
           ),
           const Divider(),
           _statusRow(
-            'Master Enable',
-            state.masterEnabled ? 'On' : 'Off',
+            l.masterEnable,
+            state.masterEnabled ? l.on : l.off,
             dotColor: state.masterEnabled
                 ? const Color(0xFF00E676)
                 : AppColors.disabledText,
           ),
           const Divider(),
           _statusRow(
-            'FX Mode',
-            state.activeDeviceType == 0 ? 'Headphone' : 'Speaker',
+            l.fxMode,
+            state.activeDeviceType == 0 ? l.headphone : l.speaker,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildEndpointsCard() {
+  Widget _buildEndpointsCard(S l) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -196,7 +207,7 @@ class _DriverPageState extends State<DriverPage> {
           Row(
             children: [
               Text(
-                'Audio Endpoints',
+                l.audioEndpoints,
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -218,16 +229,19 @@ class _DriverPageState extends State<DriverPage> {
                 const SizedBox(width: 8),
                 FilledButton(
                   onPressed: _registerAll,
-                  child: const Text('Register All'),
+                  child: Text(l.registerAll),
                 ),
               ],
             ],
           ),
           const SizedBox(height: 12),
           if (_endpoints.isEmpty && !_loading)
-            const Text(
-              'No active render endpoints found.',
-              style: TextStyle(fontSize: 12, color: AppColors.disabledText),
+            Text(
+              l.noEndpointsFound,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.disabledText,
+              ),
             ),
           ..._endpoints.map(
             (ep) => Padding(
@@ -269,7 +283,7 @@ class _DriverPageState extends State<DriverPage> {
                           ),
                         ),
                         Text(
-                          ep.registered ? 'ViPER registered' : 'Not registered',
+                          ep.registered ? l.viperRegistered : l.notRegistered,
                           style: TextStyle(
                             fontSize: 11,
                             color: ep.registered
@@ -286,7 +300,7 @@ class _DriverPageState extends State<DriverPage> {
                         : () => ep.registered
                               ? _unregisterSingle(ep.id)
                               : _registerSingle(ep.id),
-                    child: Text(ep.registered ? 'Unregister' : 'Register'),
+                    child: Text(ep.registered ? l.unregister : l.register),
                   ),
                 ],
               ),
@@ -297,7 +311,7 @@ class _DriverPageState extends State<DriverPage> {
     );
   }
 
-  Widget _buildInfoCard(ViperState state) {
+  Widget _buildInfoCard(S l, ViperState state) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -309,7 +323,7 @@ class _DriverPageState extends State<DriverPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Driver Information',
+            l.driverInformation,
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
@@ -318,15 +332,15 @@ class _DriverPageState extends State<DriverPage> {
           ),
           const SizedBox(height: 12),
           _infoRow(
-            'Version',
+            l.version,
             state.apoVersion.isEmpty ? '-' : state.apoVersion,
           ),
           const Divider(),
-          _infoRow('Architecture', state.apoArch.isEmpty ? '-' : state.apoArch),
+          _infoRow(l.architecture, state.apoArch.isEmpty ? '-' : state.apoArch),
           const Divider(),
-          _infoRow('APO Type', 'MFX (Component)'),
+          _infoRow(l.apoType, l.mfxComponent),
           const Divider(),
-          _infoRow('IPC', 'Shared Memory'),
+          _infoRow(l.ipc, l.sharedMemory),
         ],
       ),
     );

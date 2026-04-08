@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:provider/provider.dart';
+import 'package:viper4windows/l10n/app_localizations.dart';
 import 'package:viper4windows/models/value_mappings.dart';
 import 'package:viper4windows/models/viper_state.dart';
 import 'package:viper4windows/theme/app_colors.dart';
@@ -13,12 +14,13 @@ class OutputPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<ViperState>();
+    final l = S.of(context)!;
 
     return ScaffoldPage.scrollable(
       padding: const EdgeInsets.all(20),
       children: [
         Text(
-          'Master Limiter',
+          l.pageMasterLimiter,
           style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.w700,
@@ -26,12 +28,12 @@ class OutputPage extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        _buildOutputCard(state),
+        _buildOutputCard(state, l),
       ],
     );
   }
 
-  Widget _buildOutputCard(ViperState state) {
+  Widget _buildOutputCard(ViperState state, S l) {
     final volIdx = state.outputVolume;
     final volPercent = ValueMappings.safeIndex(
       ValueMappings.outputVolumeValues,
@@ -58,7 +60,7 @@ class OutputPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             LabeledSlider(
-              label: 'Output Gain',
+              label: l.outputGain,
               value: volIdx.toDouble(),
               min: 0,
               max: 21,
@@ -73,7 +75,7 @@ class OutputPage extends StatelessWidget {
               onChanged: (v) => state.outputVolume = v.round(),
             ),
             LabeledSlider(
-              label: 'Output Pan',
+              label: l.outputPan,
               value: state.channelPan.toDouble(),
               min: -100,
               max: 100,
@@ -81,13 +83,13 @@ class OutputPage extends StatelessWidget {
               enabled: state.masterEnabled,
               valueFormatter: (v) {
                 final iv = v.round();
-                if (iv == 0) return 'Center';
-                return iv > 0 ? 'R $iv' : 'L ${-iv}';
+                if (iv == 0) return l.panCenter;
+                return iv > 0 ? l.panRight(iv) : l.panLeft(-iv);
               },
               onChanged: (v) => state.channelPan = v.round(),
             ),
             LabeledSlider(
-              label: 'Threshold Limit',
+              label: l.thresholdLimit,
               value: limIdx.toDouble(),
               min: 0,
               max: 5,

@@ -1,6 +1,7 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:provider/provider.dart';
+import 'package:viper4windows/l10n/app_localizations.dart';
 import 'package:viper4windows/models/viper_state.dart';
 import 'package:viper4windows/theme/app_colors.dart';
 
@@ -30,11 +31,13 @@ class _PresetPageState extends State<PresetPage> {
       _selectedPreset = null;
     }
 
+    final l = S.of(context)!;
+
     return ScaffoldPage.scrollable(
       padding: const EdgeInsets.all(20),
       children: [
         Text(
-          'Presets',
+          l.pagePresets,
           style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.w700,
@@ -42,15 +45,15 @@ class _PresetPageState extends State<PresetPage> {
           ),
         ),
         const SizedBox(height: 16),
-        _buildSaveCard(state),
+        _buildSaveCard(state, l),
         const SizedBox(height: 16),
-        _buildLoadCard(state),
+        _buildLoadCard(state, l),
       ],
     );
   }
 
-  Widget _buildSaveCard(ViperState state) {
-    final modeLabel = state.fxType == 0 ? 'Headphone' : 'Speaker';
+  Widget _buildSaveCard(ViperState state, S l) {
+    final modeLabel = state.fxType == 0 ? l.headphone : l.speaker;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -65,7 +68,7 @@ class _PresetPageState extends State<PresetPage> {
           Row(
             children: [
               Text(
-                'Save Current Settings',
+                l.saveCurrentSettings,
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -96,7 +99,7 @@ class _PresetPageState extends State<PresetPage> {
               Expanded(
                 child: TextBox(
                   controller: _nameController,
-                  placeholder: 'Preset name',
+                  placeholder: l.presetName,
                   style: const TextStyle(
                     fontSize: 13,
                     color: AppColors.enabledText,
@@ -111,7 +114,7 @@ class _PresetPageState extends State<PresetPage> {
                   state.savePreset(name);
                   _nameController.clear();
                 },
-                child: const Text('Save'),
+                child: Text(l.save),
               ),
             ],
           ),
@@ -120,7 +123,7 @@ class _PresetPageState extends State<PresetPage> {
     );
   }
 
-  Widget _buildLoadCard(ViperState state) {
+  Widget _buildLoadCard(ViperState state, S l) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -132,7 +135,7 @@ class _PresetPageState extends State<PresetPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Load / Manage',
+            l.loadManage,
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
@@ -145,7 +148,7 @@ class _PresetPageState extends State<PresetPage> {
               Expanded(
                 child: ComboBox<String>(
                   value: _selectedPreset,
-                  placeholder: const Text('Select preset...'),
+                  placeholder: Text(l.selectPreset),
                   items: state.presetFiles
                       .map(
                         (name) => ComboBoxItem<String>(
@@ -165,13 +168,13 @@ class _PresetPageState extends State<PresetPage> {
                     : () {
                         final result = state.loadPreset(_selectedPreset!);
                         if (result >= 0) {
-                          final target = result == 1 ? 'Speaker' : 'Headphone';
+                          final target = result == 1 ? l.speaker : l.headphone;
                           displayInfoBar(
                             context,
                             builder: (ctx, close) {
                               return InfoBar(
                                 title: Text(
-                                  'Loaded "$_selectedPreset" to $target',
+                                  l.presetLoadedTo(_selectedPreset!, target),
                                 ),
                                 severity: InfoBarSeverity.success,
                                 action: IconButton(
@@ -183,7 +186,7 @@ class _PresetPageState extends State<PresetPage> {
                           );
                         }
                       },
-                child: const Text('Load'),
+                child: Text(l.load),
               ),
             ],
           ),
@@ -194,7 +197,7 @@ class _PresetPageState extends State<PresetPage> {
               Button(
                 onPressed: () async {
                   final result = await FilePicker.pickFiles(
-                    dialogTitle: 'Import Preset',
+                    dialogTitle: l.importPreset,
                     type: FileType.custom,
                     allowedExtensions: ['json'],
                   );
@@ -202,7 +205,7 @@ class _PresetPageState extends State<PresetPage> {
                     state.importPreset(result.files.single.path!);
                   }
                 },
-                child: const Text('Import'),
+                child: Text(l.importBtn),
               ),
               const SizedBox(width: 8),
               Button(
@@ -212,7 +215,7 @@ class _PresetPageState extends State<PresetPage> {
                         state.deletePreset(_selectedPreset!);
                         setState(() => _selectedPreset = null);
                       },
-                child: const Text('Delete'),
+                child: Text(l.delete),
               ),
             ],
           ),

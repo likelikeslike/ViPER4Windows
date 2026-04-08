@@ -1,6 +1,6 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:provider/provider.dart';
-
+import 'package:viper4windows/l10n/app_localizations.dart';
 import 'package:viper4windows/models/viper_state.dart';
 
 class StatusIndicator extends StatelessWidget {
@@ -9,18 +9,19 @@ class StatusIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<ViperState>();
+    final l = S.of(context)!;
 
     Color dotColor;
     String tooltip;
     if (state.apoConnected && state.apoProcessing) {
       dotColor = const Color(0xFF00E676);
-      tooltip = 'APO active (${state.apoSampleRate} Hz)';
+      tooltip = l.statusApoActive(state.apoSampleRate);
     } else if (state.apoConnected) {
       dotColor = const Color(0xFFFFD740);
-      tooltip = 'APO connected, idle';
+      tooltip = l.statusApoIdle;
     } else {
       dotColor = const Color(0xFFFF5252);
-      tooltip = 'APO not found';
+      tooltip = l.statusApoNotFound;
     }
 
     return Tooltip(

@@ -1,5 +1,6 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:provider/provider.dart';
+import 'package:viper4windows/l10n/app_localizations.dart';
 import 'package:viper4windows/models/eq_presets.dart';
 import 'package:viper4windows/models/viper_state.dart';
 import 'package:viper4windows/theme/app_colors.dart';
@@ -60,6 +61,7 @@ class _EqualizerPageState extends State<EqualizerPage> {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<ViperState>();
+    final l = S.of(context)!;
     final bandCount = state.equalizerBandCount;
     final labels = EqLabels.fullLabels(bandCount);
 
@@ -67,7 +69,7 @@ class _EqualizerPageState extends State<EqualizerPage> {
       padding: const EdgeInsets.all(20),
       children: [
         Text(
-          'Equalizer',
+          l.pageEqualizer,
           style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.w700,
@@ -76,39 +78,44 @@ class _EqualizerPageState extends State<EqualizerPage> {
         ),
         const SizedBox(height: 16),
         EffectCard(
-          title: 'FIR Equalizer',
+          title: l.firEqualizer,
           masterEnabled: state.masterEnabled,
           enabled: state.equalizerEnabled,
           onToggle: (v) => state.equalizerEnabled = v,
-          child: _buildContent(state, bandCount, labels),
+          child: _buildContent(state, bandCount, labels, l),
         ),
       ],
     );
   }
 
-  Widget _buildContent(ViperState state, int bandCount, List<String> labels) {
+  Widget _buildContent(
+    ViperState state,
+    int bandCount,
+    List<String> labels,
+    S l,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildBandCountPicker(state, bandCount),
+          _buildBandCountPicker(state, bandCount, l),
           const SizedBox(height: 12),
-          _buildPresetPicker(state),
+          _buildPresetPicker(state, l),
           const SizedBox(height: 12),
           _buildBandSliders(state, bandCount, labels),
           const SizedBox(height: 12),
-          _buildResetButton(state),
+          _buildResetButton(state, l),
         ],
       ),
     );
   }
 
-  Widget _buildBandCountPicker(ViperState state, int bandCount) {
+  Widget _buildBandCountPicker(ViperState state, int bandCount, S l) {
     return Row(
       children: [
         Text(
-          'Bands',
+          l.bands,
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
@@ -167,13 +174,13 @@ class _EqualizerPageState extends State<EqualizerPage> {
     );
   }
 
-  Widget _buildPresetPicker(ViperState state) {
+  Widget _buildPresetPicker(ViperState state, S l) {
     final userPresets = state.eqPresetsForCurrentBandCount();
     final items = <ComboBoxItem<int>>[
       ComboBoxItem<int>(
         value: -1,
         child: Text(
-          'Custom',
+          l.custom,
           style: TextStyle(fontSize: 12, color: AppColors.enabledText),
         ),
       ),
@@ -200,7 +207,7 @@ class _EqualizerPageState extends State<EqualizerPage> {
     return Row(
       children: [
         Text(
-          'Preset',
+          l.preset,
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
@@ -232,7 +239,7 @@ class _EqualizerPageState extends State<EqualizerPage> {
         const SizedBox(width: 8),
         IconButton(
           icon: const Icon(FluentIcons.save, size: 14),
-          onPressed: () => _showSaveDialog(context, state),
+          onPressed: () => _showSaveDialog(context, state, l),
         ),
         if (_selectedPreset >= 1000)
           IconButton(
@@ -382,7 +389,7 @@ class _EqualizerPageState extends State<EqualizerPage> {
     );
   }
 
-  Widget _buildResetButton(ViperState state) {
+  Widget _buildResetButton(ViperState state, S l) {
     return Align(
       alignment: Alignment.centerRight,
       child: FilledButton(
@@ -393,33 +400,30 @@ class _EqualizerPageState extends State<EqualizerPage> {
           ),
         ),
         child: Text(
-          'Reset to Flat',
+          l.resetToFlat,
           style: TextStyle(fontSize: 12, color: AppColors.enabledText),
         ),
       ),
     );
   }
 
-  void _showSaveDialog(BuildContext context, ViperState state) {
+  void _showSaveDialog(BuildContext context, ViperState state, S l) {
     _presetNameController.clear();
     showDialog(
       context: context,
       builder: (ctx) {
         return ContentDialog(
           constraints: const BoxConstraints(maxWidth: 300, maxHeight: 200),
-          title: const Text('Save EQ Preset'),
+          title: Text(l.saveEqPreset),
           content: TextBox(
             controller: _presetNameController,
-            placeholder: 'Preset name',
+            placeholder: l.presetName,
             autofocus: true,
           ),
           actions: [
-            Button(
-              child: const Text('Cancel'),
-              onPressed: () => Navigator.pop(ctx),
-            ),
+            Button(child: Text(l.cancel), onPressed: () => Navigator.pop(ctx)),
             FilledButton(
-              child: const Text('Save'),
+              child: Text(l.save),
               onPressed: () {
                 final name = _presetNameController.text.trim();
                 if (name.isEmpty) return;

@@ -1,5 +1,6 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:provider/provider.dart';
+import 'package:viper4windows/l10n/app_localizations.dart';
 import 'package:viper4windows/models/value_mappings.dart';
 import 'package:viper4windows/models/viper_state.dart';
 import 'package:viper4windows/theme/app_colors.dart';
@@ -12,12 +13,13 @@ class TonePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<ViperState>();
+    final l = S.of(context)!;
 
     return ScaffoldPage.scrollable(
       padding: const EdgeInsets.all(20),
       children: [
         Text(
-          'Tone',
+          l.pageTone,
           style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.w700,
@@ -25,23 +27,23 @@ class TonePage extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        _buildViperBass(state),
-        _buildViperBassMono(state),
-        _buildViperClarity(state),
-        _buildSpectrumExtension(state),
-        _buildTubeSimulator(state),
-        _buildAnalogX(state),
+        _buildViperBass(state, l),
+        _buildViperBassMono(state, l),
+        _buildViperClarity(state, l),
+        _buildSpectrumExtension(state, l),
+        _buildTubeSimulator(state, l),
+        _buildAnalogX(state, l),
       ],
     );
   }
 
-  Widget _buildViperBass(ViperState state) {
+  Widget _buildViperBass(ViperState state, S l) {
     final isSubwoofer = state.viperBassMode == 2;
     final gainLabels = isSubwoofer
         ? ValueMappings.subwooferGainDbLabels
         : ValueMappings.bassGainDbLabels;
     return EffectCard(
-      title: 'ViPER Bass',
+      title: l.viperBass,
       masterEnabled: state.masterEnabled,
       enabled: state.viperBassEnabled,
       onToggle: (v) => state.viperBassEnabled = v,
@@ -50,23 +52,21 @@ class TonePage extends StatelessWidget {
           const SizedBox(height: 8),
           Row(
             children: [
-              const SizedBox(
+              SizedBox(
                 width: 100,
                 child: Text(
-                  'Mode',
+                  l.mode,
                   style: TextStyle(fontSize: 12, color: AppColors.subtitleText),
                 ),
               ),
               Expanded(
                 child: ComboBox<int>(
                   value: state.viperBassMode,
-                  items: List.generate(
-                    ValueMappings.bassModeLabels.length,
-                    (i) => ComboBoxItem(
-                      value: i,
-                      child: Text(ValueMappings.bassModeLabels[i]),
-                    ),
-                  ),
+                  items: [
+                    ComboBoxItem(value: 0, child: Text(l.bassNatural)),
+                    ComboBoxItem(value: 1, child: Text(l.bassPureBass)),
+                    ComboBoxItem(value: 2, child: Text(l.bassSubwoofer)),
+                  ],
                   onChanged: (v) {
                     if (v != null) state.viperBassMode = v;
                   },
@@ -78,7 +78,7 @@ class TonePage extends StatelessWidget {
           const SizedBox(height: 8),
           if (!isSubwoofer)
             LabeledSlider(
-              label: 'Frequency',
+              label: l.frequency,
               value: state.viperBassFrequency.toDouble(),
               min: 0,
               max: 135,
@@ -87,7 +87,7 @@ class TonePage extends StatelessWidget {
               onChanged: (v) => state.viperBassFrequency = v.round(),
             ),
           LabeledSlider(
-            label: 'Gain',
+            label: l.gain,
             value: state.viperBassGain.toDouble(),
             min: 0,
             max: gainLabels.length - 1,
@@ -103,10 +103,10 @@ class TonePage extends StatelessWidget {
           ),
           Row(
             children: [
-              const SizedBox(
+              SizedBox(
                 width: 100,
                 child: Text(
-                  'Fade-in',
+                  l.antiPop,
                   style: TextStyle(fontSize: 12, color: AppColors.subtitleText),
                 ),
               ),
@@ -123,13 +123,13 @@ class TonePage extends StatelessWidget {
     );
   }
 
-  Widget _buildViperBassMono(ViperState state) {
+  Widget _buildViperBassMono(ViperState state, S l) {
     final isSubwoofer = state.viperBassMonoMode == 2;
     final gainLabels = isSubwoofer
         ? ValueMappings.subwooferGainDbLabels
         : ValueMappings.bassGainDbLabels;
     return EffectCard(
-      title: 'ViPER Bass Mono',
+      title: l.viperBassMono,
       masterEnabled: state.masterEnabled,
       enabled: state.viperBassMonoEnabled,
       onToggle: (v) => state.viperBassMonoEnabled = v,
@@ -138,23 +138,21 @@ class TonePage extends StatelessWidget {
           const SizedBox(height: 8),
           Row(
             children: [
-              const SizedBox(
+              SizedBox(
                 width: 100,
                 child: Text(
-                  'Mode',
+                  l.mode,
                   style: TextStyle(fontSize: 12, color: AppColors.subtitleText),
                 ),
               ),
               Expanded(
                 child: ComboBox<int>(
                   value: state.viperBassMonoMode,
-                  items: List.generate(
-                    ValueMappings.bassModeLabels.length,
-                    (i) => ComboBoxItem(
-                      value: i,
-                      child: Text(ValueMappings.bassModeLabels[i]),
-                    ),
-                  ),
+                  items: [
+                    ComboBoxItem(value: 0, child: Text(l.bassNatural)),
+                    ComboBoxItem(value: 1, child: Text(l.bassPureBass)),
+                    ComboBoxItem(value: 2, child: Text(l.bassSubwoofer)),
+                  ],
                   onChanged: (v) {
                     if (v != null) state.viperBassMonoMode = v;
                   },
@@ -166,7 +164,7 @@ class TonePage extends StatelessWidget {
           const SizedBox(height: 8),
           if (!isSubwoofer)
             LabeledSlider(
-              label: 'Frequency',
+              label: l.frequency,
               value: state.viperBassMonoFrequency.toDouble(),
               min: 0,
               max: 135,
@@ -175,7 +173,7 @@ class TonePage extends StatelessWidget {
               onChanged: (v) => state.viperBassMonoFrequency = v.round(),
             ),
           LabeledSlider(
-            label: 'Gain',
+            label: l.gain,
             value: state.viperBassMonoGain.toDouble(),
             min: 0,
             max: gainLabels.length - 1,
@@ -191,10 +189,10 @@ class TonePage extends StatelessWidget {
           ),
           Row(
             children: [
-              const SizedBox(
+              SizedBox(
                 width: 100,
                 child: Text(
-                  'Fade-in',
+                  l.antiPop,
                   style: TextStyle(fontSize: 12, color: AppColors.subtitleText),
                 ),
               ),
@@ -211,9 +209,9 @@ class TonePage extends StatelessWidget {
     );
   }
 
-  Widget _buildViperClarity(ViperState state) {
+  Widget _buildViperClarity(ViperState state, S l) {
     return EffectCard(
-      title: 'ViPER Clarity',
+      title: l.viperClarity,
       masterEnabled: state.masterEnabled,
       enabled: state.viperClarityEnabled,
       onToggle: (v) => state.viperClarityEnabled = v,
@@ -222,23 +220,21 @@ class TonePage extends StatelessWidget {
           const SizedBox(height: 8),
           Row(
             children: [
-              const SizedBox(
+              SizedBox(
                 width: 100,
                 child: Text(
-                  'Mode',
+                  l.mode,
                   style: TextStyle(fontSize: 12, color: AppColors.subtitleText),
                 ),
               ),
               Expanded(
                 child: ComboBox<int>(
                   value: state.viperClarityMode,
-                  items: List.generate(
-                    ValueMappings.clarityModeLabels.length,
-                    (i) => ComboBoxItem(
-                      value: i,
-                      child: Text(ValueMappings.clarityModeLabels[i]),
-                    ),
-                  ),
+                  items: [
+                    ComboBoxItem(value: 0, child: Text(l.clarityNatural)),
+                    ComboBoxItem(value: 1, child: Text(l.clarityOZone)),
+                    ComboBoxItem(value: 2, child: Text(l.clarityXHiFi)),
+                  ],
                   onChanged: (v) {
                     if (v != null) state.viperClarityMode = v;
                   },
@@ -249,7 +245,7 @@ class TonePage extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           LabeledSlider(
-            label: 'Gain',
+            label: l.gain,
             value: state.viperClarityGain.toDouble(),
             min: 0,
             max: 9,
@@ -268,9 +264,9 @@ class TonePage extends StatelessWidget {
     );
   }
 
-  Widget _buildSpectrumExtension(ViperState state) {
+  Widget _buildSpectrumExtension(ViperState state, S l) {
     return EffectCard(
-      title: 'Spectrum Extension',
+      title: l.spectrumExtension,
       masterEnabled: state.masterEnabled,
       enabled: state.spectrumExtensionEnabled,
       onToggle: (v) => state.spectrumExtensionEnabled = v,
@@ -278,7 +274,7 @@ class TonePage extends StatelessWidget {
         children: [
           const SizedBox(height: 8),
           LabeledSlider(
-            label: 'Strength',
+            label: l.strength,
             value: state.spectrumExtensionBark.toDouble(),
             min: 0,
             max: 10,
@@ -286,7 +282,7 @@ class TonePage extends StatelessWidget {
             onChanged: (v) => state.spectrumExtensionBark = v.round(),
           ),
           LabeledSlider(
-            label: 'Exciter',
+            label: l.exciter,
             value: state.spectrumExtensionExciter.toDouble(),
             min: 0,
             max: 100,
@@ -299,7 +295,7 @@ class TonePage extends StatelessWidget {
     );
   }
 
-  Widget _buildTubeSimulator(ViperState state) {
+  Widget _buildTubeSimulator(ViperState state, S l) {
     final active = state.tubeSimulatorEnabled && state.masterEnabled;
     return AnimatedOpacity(
       opacity: state.masterEnabled ? 1.0 : 0.5,
@@ -320,7 +316,7 @@ class TonePage extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                'Tube Simulator (6N1J)',
+                l.tubeSimulator,
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -342,9 +338,9 @@ class TonePage extends StatelessWidget {
     );
   }
 
-  Widget _buildAnalogX(ViperState state) {
+  Widget _buildAnalogX(ViperState state, S l) {
     return EffectCard(
-      title: 'AnalogX',
+      title: l.analogX,
       masterEnabled: state.masterEnabled,
       enabled: state.analogXEnabled,
       onToggle: (v) => state.analogXEnabled = v,
@@ -353,23 +349,21 @@ class TonePage extends StatelessWidget {
           const SizedBox(height: 8),
           Row(
             children: [
-              const SizedBox(
+              SizedBox(
                 width: 100,
                 child: Text(
-                  'Mode',
+                  l.mode,
                   style: TextStyle(fontSize: 12, color: AppColors.subtitleText),
                 ),
               ),
               Expanded(
                 child: ComboBox<int>(
                   value: state.analogXMode,
-                  items: List.generate(
-                    ValueMappings.analogXModeLabels.length,
-                    (i) => ComboBoxItem(
-                      value: i,
-                      child: Text(ValueMappings.analogXModeLabels[i]),
-                    ),
-                  ),
+                  items: [
+                    ComboBoxItem(value: 0, child: Text(l.analogXMild)),
+                    ComboBoxItem(value: 1, child: Text(l.analogXMedium)),
+                    ComboBoxItem(value: 2, child: Text(l.analogXStrong)),
+                  ],
                   onChanged: (v) {
                     if (v != null) state.analogXMode = v;
                   },

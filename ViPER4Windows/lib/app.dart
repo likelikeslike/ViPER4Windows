@@ -1,6 +1,8 @@
 import 'package:fluent_ui/fluent_ui.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:system_tray/system_tray.dart';
+import 'package:viper4windows/l10n/app_localizations.dart';
 import 'package:viper4windows/models/viper_state.dart';
 import 'package:viper4windows/pages/driver_page.dart';
 import 'package:viper4windows/pages/dynamics_page.dart';
@@ -26,6 +28,14 @@ class ViperApp extends StatelessWidget {
     return FluentApp(
       title: 'ViPER4Windows',
       debugShowCheckedModeBanner: false,
+      localizationsDelegates: const [
+        S.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        FluentLocalizations.delegate,
+      ],
+      supportedLocales: S.supportedLocales,
       themeMode: ThemeMode.dark,
       darkTheme: FluentThemeData(
         brightness: Brightness.dark,
@@ -63,6 +73,12 @@ class _ShellState extends State<_Shell> with WindowListener {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _updateTrayMenu();
+  }
+
+  @override
   void dispose() {
     windowManager.removeListener(this);
     _systemTray.destroy();
@@ -93,11 +109,15 @@ class _ShellState extends State<_Shell> with WindowListener {
         _systemTray.popUpContextMenu();
       }
     });
+  }
 
+  Future<void> _updateTrayMenu() async {
+    final l = S.of(context);
+    if (l == null) return;
     final menu = Menu();
     await menu.buildFrom([
       MenuItemLabel(
-        label: 'Show',
+        label: l.trayShow,
         onClicked: (_) async {
           await windowManager.show();
           await windowManager.focus();
@@ -105,7 +125,7 @@ class _ShellState extends State<_Shell> with WindowListener {
       ),
       MenuSeparator(),
       MenuItemLabel(
-        label: 'Quit',
+        label: l.trayQuit,
         onClicked: (_) async {
           _log.info('Quit requested');
           FileLogger.shared.flush();
@@ -122,6 +142,7 @@ class _ShellState extends State<_Shell> with WindowListener {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<ViperState>();
+    final l = S.of(context)!;
 
     return NavigationView(
       titleBar: TitleBar(
@@ -132,7 +153,7 @@ class _ShellState extends State<_Shell> with WindowListener {
             const StatusIndicator(),
             const SizedBox(width: 10),
             Text(
-              'ViPER4Windows',
+              l.appTitle,
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
@@ -145,9 +166,9 @@ class _ShellState extends State<_Shell> with WindowListener {
         endHeader: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildFxToggle(state),
+            _buildFxToggle(state, l),
             const SizedBox(width: 16),
-            _buildMasterToggle(state),
+            _buildMasterToggle(state, l),
             const SizedBox(width: 8),
           ],
         ),
@@ -160,39 +181,39 @@ class _ShellState extends State<_Shell> with WindowListener {
         items: [
           PaneItem(
             icon: Icon(FluentIcons.volume2, size: 16.0),
-            title: const Text('Output'),
+            title: Text(l.navOutput),
             body: const OutputPage(),
           ),
           PaneItem(
             icon: Icon(FluentIcons.equalizer, size: 16.0),
-            title: const Text('Equalizer'),
+            title: Text(l.navEqualizer),
             body: const EqualizerPage(),
           ),
           PaneItem(
             icon: Icon(FluentIcons.music_note, size: 16.0),
-            title: const Text('Tone'),
+            title: Text(l.navTone),
             body: const TonePage(),
           ),
           PaneItem(
             icon: Icon(FluentIcons.headset, size: 16.0),
-            title: const Text('Spatial'),
+            title: Text(l.navSpatial),
             body: const SpatialPage(),
           ),
           PaneItem(
-            icon: Icon(FluentIcons.speakers, size: 16.0),
-            title: const Text('Dynamics'),
+            icon: Icon(FluentIcons.heart, size: 16.0),
+            title: Text(l.navDynamics),
             body: const DynamicsPage(),
           ),
           PaneItem(
             icon: Icon(FluentIcons.save_template, size: 16.0),
-            title: const Text('Presets'),
+            title: Text(l.navPresets),
             body: const PresetPage(),
           ),
         ],
         footerItems: [
           PaneItem(
             icon: Icon(FluentIcons.info, size: 16.0),
-            title: const Text('Driver Status'),
+            title: Text(l.navDriverStatus),
             body: const DriverPage(),
           ),
         ],
@@ -200,12 +221,12 @@ class _ShellState extends State<_Shell> with WindowListener {
     );
   }
 
-  Widget _buildMasterToggle(ViperState state) {
+  Widget _buildMasterToggle(ViperState state, S l) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          'Master',
+          l.master,
           style: TextStyle(
             fontSize: 12,
             color: state.masterEnabled
@@ -222,18 +243,18 @@ class _ShellState extends State<_Shell> with WindowListener {
     );
   }
 
-  Widget _buildFxToggle(ViperState state) {
+  Widget _buildFxToggle(ViperState state, S l) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         _FxButton(
-          label: 'Headphone',
+          label: l.headphone,
           selected: state.fxType == 0,
           onTap: () => state.fxType = 0,
         ),
         const SizedBox(width: 4),
         _FxButton(
-          label: 'Speaker',
+          label: l.speaker,
           selected: state.fxType == 1,
           onTap: () => state.fxType = 1,
         ),

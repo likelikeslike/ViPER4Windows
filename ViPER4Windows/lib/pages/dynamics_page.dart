@@ -1,13 +1,15 @@
 import 'dart:math';
-
 import 'package:file_picker/file_picker.dart';
+
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:provider/provider.dart';
+
 import 'package:viper4windows/models/value_mappings.dart';
 import 'package:viper4windows/models/viper_state.dart';
-import 'package:viper4windows/theme/app_colors.dart';
 import 'package:viper4windows/widgets/effect_card.dart';
 import 'package:viper4windows/widgets/labeled_slider.dart';
+import 'package:viper4windows/theme/app_colors.dart';
+import 'package:viper4windows/l10n/app_localizations.dart';
 
 class DynamicsPage extends StatefulWidget {
   const DynamicsPage({super.key});
@@ -29,12 +31,13 @@ class _DynamicsPageState extends State<DynamicsPage> {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<ViperState>();
+    final l = S.of(context)!;
 
     return ScaffoldPage.scrollable(
       padding: const EdgeInsets.all(20),
       children: [
         Text(
-          'Dynamics',
+          l.pageDynamics,
           style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.w700,
@@ -42,17 +45,17 @@ class _DynamicsPageState extends State<DynamicsPage> {
           ),
         ),
         const SizedBox(height: 16),
-        _buildDynamicSystem(state),
-        _buildFetCompressor(state),
-        _buildPlaybackGain(state),
-        _buildDdc(context, state),
-        _buildConvolver(context, state),
-        _buildSpeakerOptimization(state),
+        _buildDynamicSystem(state, l),
+        _buildFetCompressor(state, l),
+        _buildPlaybackGain(state, l),
+        _buildDdc(context, state, l),
+        _buildConvolver(context, state, l),
+        _buildSpeakerOptimization(state, l),
       ],
     );
   }
 
-  Widget _buildDynamicSystem(ViperState state) {
+  Widget _buildDynamicSystem(ViperState state, S l) {
     final userPresets = state.dsPresetFiles;
     final items = <ComboBoxItem<int>>[
       ...List.generate(
@@ -77,7 +80,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
     ];
 
     return EffectCard(
-      title: 'Dynamic System',
+      title: l.dynamicSystem,
       masterEnabled: state.masterEnabled,
       enabled: state.dynamicSystemEnabled,
       onToggle: (v) => state.dynamicSystemEnabled = v,
@@ -86,10 +89,10 @@ class _DynamicsPageState extends State<DynamicsPage> {
           const SizedBox(height: 8),
           Row(
             children: [
-              const SizedBox(
+              SizedBox(
                 width: 100,
                 child: Text(
-                  'Preset',
+                  l.preset,
                   style: TextStyle(fontSize: 12, color: AppColors.subtitleText),
                 ),
               ),
@@ -116,7 +119,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
               const SizedBox(width: 8),
               IconButton(
                 icon: const Icon(FluentIcons.save, size: 14),
-                onPressed: () => _showDsSaveDialog(context, state),
+                onPressed: () => _showDsSaveDialog(context, state, l),
               ),
               if (_selectedDsPreset >= 1000)
                 IconButton(
@@ -132,7 +135,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
             ],
           ),
           LabeledSlider(
-            label: 'Strength',
+            label: l.strength,
             value: state.dynamicSystemStrength.toDouble(),
             min: 0,
             max: 100,
@@ -141,7 +144,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
             onChanged: (v) => state.dynamicSystemStrength = v.round(),
           ),
           LabeledSlider(
-            label: 'X Low Freq',
+            label: l.xLowFreq,
             value: state.dsXLow.toDouble(),
             min: 0,
             max: 2400,
@@ -150,7 +153,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
             onChanged: (v) => state.dsXLow = v.round(),
           ),
           LabeledSlider(
-            label: 'X High Freq',
+            label: l.xHighFreq,
             value: state.dsXHigh.toDouble(),
             min: 0,
             max: 12000,
@@ -159,7 +162,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
             onChanged: (v) => state.dsXHigh = v.round(),
           ),
           LabeledSlider(
-            label: 'Y Low Freq',
+            label: l.yLowFreq,
             value: state.dsYLow.toDouble(),
             min: 0,
             max: 200,
@@ -168,7 +171,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
             onChanged: (v) => state.dsYLow = v.round(),
           ),
           LabeledSlider(
-            label: 'Y High Freq',
+            label: l.yHighFreq,
             value: state.dsYHigh.toDouble(),
             min: 0,
             max: 300,
@@ -177,7 +180,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
             onChanged: (v) => state.dsYHigh = v.round(),
           ),
           LabeledSlider(
-            label: 'Side Gain Low',
+            label: l.sideGainLow,
             value: state.dsSideGainLow.toDouble(),
             min: 0,
             max: 100,
@@ -186,7 +189,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
             onChanged: (v) => state.dsSideGainLow = v.round(),
           ),
           LabeledSlider(
-            label: 'Side Gain High',
+            label: l.sideGainHigh,
             value: state.dsSideGainHigh.toDouble(),
             min: 0,
             max: 100,
@@ -199,9 +202,9 @@ class _DynamicsPageState extends State<DynamicsPage> {
     );
   }
 
-  Widget _buildFetCompressor(ViperState state) {
+  Widget _buildFetCompressor(ViperState state, S l) {
     return EffectCard(
-      title: 'FET Compressor',
+      title: l.fetCompressor,
       masterEnabled: state.masterEnabled,
       enabled: state.fetCompressorEnabled,
       onToggle: (v) => state.fetCompressorEnabled = v,
@@ -209,26 +212,26 @@ class _DynamicsPageState extends State<DynamicsPage> {
         children: [
           const SizedBox(height: 8),
           LabeledSlider(
-            label: 'Threshold',
+            label: l.threshold,
             value: state.fetCompressorThreshold.toDouble(),
             min: 0,
             max: 200,
             onChanged: (v) => state.fetCompressorThreshold = v.round(),
           ),
           LabeledSlider(
-            label: 'Ratio',
+            label: l.ratio,
             value: state.fetCompressorRatio.toDouble(),
             min: 0,
             max: 200,
             onChanged: (v) => state.fetCompressorRatio = v.round(),
           ),
           _buildAutoToggle(
-            'Auto Knee',
+            l.autoKnee,
             state.fetCompressorAutoKnee,
             (v) => state.fetCompressorAutoKnee = v,
           ),
           LabeledSlider(
-            label: 'Knee',
+            label: l.knee,
             value: state.fetCompressorKnee.toDouble(),
             min: 0,
             max: 200,
@@ -236,19 +239,19 @@ class _DynamicsPageState extends State<DynamicsPage> {
             onChanged: (v) => state.fetCompressorKnee = v.round(),
           ),
           LabeledSlider(
-            label: 'Knee Multi',
+            label: l.kneeMulti,
             value: state.fetCompressorKneeMulti.toDouble(),
             min: 0,
             max: 200,
             onChanged: (v) => state.fetCompressorKneeMulti = v.round(),
           ),
           _buildAutoToggle(
-            'Auto Gain',
+            l.autoGain,
             state.fetCompressorAutoGain,
             (v) => state.fetCompressorAutoGain = v,
           ),
           LabeledSlider(
-            label: 'Gain',
+            label: l.gain,
             value: state.fetCompressorGain.toDouble(),
             min: 0,
             max: 200,
@@ -256,12 +259,12 @@ class _DynamicsPageState extends State<DynamicsPage> {
             onChanged: (v) => state.fetCompressorGain = v.round(),
           ),
           _buildAutoToggle(
-            'Auto Attack',
+            l.autoAttack,
             state.fetCompressorAutoAttack,
             (v) => state.fetCompressorAutoAttack = v,
           ),
           LabeledSlider(
-            label: 'Attack',
+            label: l.attack,
             value: state.fetCompressorAttack.toDouble(),
             min: 0,
             max: 200,
@@ -269,19 +272,19 @@ class _DynamicsPageState extends State<DynamicsPage> {
             onChanged: (v) => state.fetCompressorAttack = v.round(),
           ),
           LabeledSlider(
-            label: 'Max Attack',
+            label: l.maxAttack,
             value: state.fetCompressorMaxAttack.toDouble(),
             min: 0,
             max: 200,
             onChanged: (v) => state.fetCompressorMaxAttack = v.round(),
           ),
           _buildAutoToggle(
-            'Auto Release',
+            l.autoRelease,
             state.fetCompressorAutoRelease,
             (v) => state.fetCompressorAutoRelease = v,
           ),
           LabeledSlider(
-            label: 'Release',
+            label: l.release,
             value: state.fetCompressorRelease.toDouble(),
             min: 0,
             max: 200,
@@ -289,28 +292,28 @@ class _DynamicsPageState extends State<DynamicsPage> {
             onChanged: (v) => state.fetCompressorRelease = v.round(),
           ),
           LabeledSlider(
-            label: 'Max Release',
+            label: l.maxRelease,
             value: state.fetCompressorMaxRelease.toDouble(),
             min: 0,
             max: 200,
             onChanged: (v) => state.fetCompressorMaxRelease = v.round(),
           ),
           LabeledSlider(
-            label: 'Crest',
+            label: l.crest,
             value: state.fetCompressorCrest.toDouble(),
             min: 0,
             max: 300,
             onChanged: (v) => state.fetCompressorCrest = v.round(),
           ),
           LabeledSlider(
-            label: 'Adapt',
+            label: l.adapt,
             value: state.fetCompressorAdapt.toDouble(),
             min: 0,
             max: 200,
             onChanged: (v) => state.fetCompressorAdapt = v.round(),
           ),
           _buildAutoToggle(
-            'No Clip',
+            l.noClip,
             state.fetCompressorNoClip,
             (v) => state.fetCompressorNoClip = v,
           ),
@@ -319,9 +322,9 @@ class _DynamicsPageState extends State<DynamicsPage> {
     );
   }
 
-  Widget _buildPlaybackGain(ViperState state) {
+  Widget _buildPlaybackGain(ViperState state, S l) {
     return EffectCard(
-      title: 'Playback Gain Control',
+      title: l.playbackGainControl,
       masterEnabled: state.masterEnabled,
       enabled: state.playbackGainEnabled,
       onToggle: (v) => state.playbackGainEnabled = v,
@@ -329,7 +332,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
         children: [
           const SizedBox(height: 8),
           LabeledSlider(
-            label: 'Strength',
+            label: l.strength,
             value: state.playbackGainStrength.toDouble(),
             min: 0,
             max: 2,
@@ -337,7 +340,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
             onChanged: (v) => state.playbackGainStrength = v.round(),
           ),
           LabeledSlider(
-            label: 'Max Gain',
+            label: l.maxGain,
             value: state.playbackGainMaxGain.toDouble(),
             min: 0,
             max: 10,
@@ -345,7 +348,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
             onChanged: (v) => state.playbackGainMaxGain = v.round(),
           ),
           LabeledSlider(
-            label: 'Output Threshold',
+            label: l.outputThreshold,
             value: state.playbackGainOutputThreshold.toDouble(),
             min: 0,
             max: 5,
@@ -366,9 +369,9 @@ class _DynamicsPageState extends State<DynamicsPage> {
     );
   }
 
-  Widget _buildDdc(BuildContext context, ViperState state) {
+  Widget _buildDdc(BuildContext context, ViperState state, S l) {
     return EffectCard(
-      title: 'ViPER-DDC',
+      title: l.viperDdc,
       masterEnabled: state.masterEnabled,
       enabled: state.ddcEnabled,
       onToggle: (v) => state.ddcEnabled = v,
@@ -377,10 +380,10 @@ class _DynamicsPageState extends State<DynamicsPage> {
           const SizedBox(height: 8),
           Row(
             children: [
-              const SizedBox(
+              SizedBox(
                 width: 100,
                 child: Text(
-                  'File',
+                  l.file,
                   style: TextStyle(fontSize: 12, color: AppColors.subtitleText),
                 ),
               ),
@@ -390,7 +393,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
                       ? state.ddcFilePath
                       : '',
                   items: [
-                    const ComboBoxItem<String>(value: '', child: Text('None')),
+                    ComboBoxItem<String>(value: '', child: Text(l.none)),
                     ...state.ddcFiles.map(
                       (name) =>
                           ComboBoxItem<String>(value: name, child: Text(name)),
@@ -417,7 +420,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
               FilledButton(
                 onPressed: () async {
                   final result = await FilePicker.pickFiles(
-                    dialogTitle: 'Import DDC Profile',
+                    dialogTitle: l.importDdcProfile,
                     type: FileType.custom,
                     allowedExtensions: ['vdc'],
                   );
@@ -425,14 +428,14 @@ class _DynamicsPageState extends State<DynamicsPage> {
                     state.importDdc(result.files.single.path!);
                   }
                 },
-                child: const Text('Import'),
+                child: Text(l.importBtn),
               ),
               const SizedBox(width: 8),
               Button(
                 onPressed: state.ddcFilePath.isEmpty
                     ? null
                     : () => state.deleteDdc(state.ddcFilePath),
-                child: const Text('Delete'),
+                child: Text(l.delete),
               ),
             ],
           ),
@@ -441,9 +444,9 @@ class _DynamicsPageState extends State<DynamicsPage> {
     );
   }
 
-  Widget _buildConvolver(BuildContext context, ViperState state) {
+  Widget _buildConvolver(BuildContext context, ViperState state, S l) {
     return EffectCard(
-      title: 'Convolver',
+      title: l.convolver,
       masterEnabled: state.masterEnabled,
       enabled: state.convolutionEnabled,
       onToggle: (v) => state.convolutionEnabled = v,
@@ -452,10 +455,10 @@ class _DynamicsPageState extends State<DynamicsPage> {
           const SizedBox(height: 8),
           Row(
             children: [
-              const SizedBox(
+              SizedBox(
                 width: 100,
                 child: Text(
-                  'File',
+                  l.file,
                   style: TextStyle(fontSize: 12, color: AppColors.subtitleText),
                 ),
               ),
@@ -465,7 +468,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
                       ? state.convolutionKernelPath
                       : '',
                   items: [
-                    const ComboBoxItem<String>(value: '', child: Text('None')),
+                    ComboBoxItem<String>(value: '', child: Text(l.none)),
                     ...state.kernelFiles.map(
                       (name) =>
                           ComboBoxItem<String>(value: name, child: Text(name)),
@@ -487,7 +490,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
           ),
           const SizedBox(height: 8),
           LabeledSlider(
-            label: 'Cross Channel',
+            label: l.crossChannel,
             value: state.convolutionCrossChannel.toDouble(),
             min: 0,
             max: 100,
@@ -501,7 +504,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
               FilledButton(
                 onPressed: () async {
                   final result = await FilePicker.pickFiles(
-                    dialogTitle: 'Import Convolver Kernel',
+                    dialogTitle: l.importConvolverKernel,
                     type: FileType.custom,
                     allowedExtensions: ['wav', 'irs'],
                   );
@@ -509,14 +512,14 @@ class _DynamicsPageState extends State<DynamicsPage> {
                     state.importKernel(result.files.single.path!);
                   }
                 },
-                child: const Text('Import'),
+                child: Text(l.importBtn),
               ),
               const SizedBox(width: 8),
               Button(
                 onPressed: state.convolutionKernelPath.isEmpty
                     ? null
                     : () => state.deleteKernel(state.convolutionKernelPath),
-                child: const Text('Delete'),
+                child: Text(l.delete),
               ),
             ],
           ),
@@ -525,7 +528,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
     );
   }
 
-  Widget _buildSpeakerOptimization(ViperState state) {
+  Widget _buildSpeakerOptimization(ViperState state, S l) {
     final active = state.speakerCorrectionEnabled && state.masterEnabled;
     return AnimatedOpacity(
       opacity: state.masterEnabled ? 1.0 : 0.5,
@@ -546,7 +549,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
           children: [
             Expanded(
               child: Text(
-                'Speaker Optimization',
+                l.speakerOptimization,
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -568,26 +571,23 @@ class _DynamicsPageState extends State<DynamicsPage> {
     );
   }
 
-  void _showDsSaveDialog(BuildContext context, ViperState state) {
+  void _showDsSaveDialog(BuildContext context, ViperState state, S l) {
     _dsPresetNameController.clear();
     showDialog(
       context: context,
       builder: (ctx) {
         return ContentDialog(
           constraints: const BoxConstraints(maxWidth: 300, maxHeight: 200),
-          title: const Text('Save DS Preset'),
+          title: Text(l.saveDsPreset),
           content: TextBox(
             controller: _dsPresetNameController,
-            placeholder: 'Preset name',
+            placeholder: l.presetName,
             autofocus: true,
           ),
           actions: [
-            Button(
-              child: const Text('Cancel'),
-              onPressed: () => Navigator.pop(ctx),
-            ),
+            Button(child: Text(l.cancel), onPressed: () => Navigator.pop(ctx)),
             FilledButton(
-              child: const Text('Save'),
+              child: Text(l.save),
               onPressed: () {
                 final name = _dsPresetNameController.text.trim();
                 if (name.isEmpty) return;
