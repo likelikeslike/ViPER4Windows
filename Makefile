@@ -6,8 +6,8 @@ APO_PROJ  = ViPER4WindowsAPO\ViPER4WindowsAPO.vcxproj
 ISS_FILE  = Installer\ViPER4Windows.iss
 UI_DIR    = ViPER4Windows
 
-VERSION_NAME ?= 1.0.0
-VERSION_CODE ?= 260409
+VERSION_NAME ?= 1.0.1
+VERSION_CODE ?= 260411
 
 .PHONY: all app driver installer clean l10n assets
 
