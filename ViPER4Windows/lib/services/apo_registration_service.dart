@@ -41,8 +41,27 @@ class ApoRegistrationService {
             $key.SetAccessControl($acl)
             $key.Close()
         }
-    } catch {}
+    } catch {
+        Write-Error "ACL failed for $epId : $_"
+    }
 ''';
+
+  Future<void> ensureProtectedAudioDGDisabled() async {
+    final script = r'''
+$path = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Audio"
+$val = Get-ItemProperty -Path $path -Name "DisableProtectedAudioDG" -ErrorAction SilentlyContinue
+if (-not $val -or $val.DisableProtectedAudioDG -ne 1) {
+    Set-ItemProperty -Path $path -Name "DisableProtectedAudioDG" -Value 1 -Type DWord -Force
+    Write-Output "FIXED"
+} else {
+    Write-Output "OK"
+}
+''';
+    final result = await _runPowerShell(script);
+    if (result.trim() == 'FIXED') {
+      _log.info('DisableProtectedAudioDG was reset, re-applied');
+    }
+  }
 
   Future<List<ApoEndpointInfo>> listRenderEndpoints() async {
     final script = r'''
@@ -356,6 +375,10 @@ Write-Output "OK"
     try {
       scriptFile.deleteSync();
     } catch (_) {}
+    final stderr = (result.stderr as String).trim();
+    if (stderr.isNotEmpty) {
+      _log.error('PowerShell stderr: $stderr');
+    }
     return (result.stdout as String).trim();
   }
 }
