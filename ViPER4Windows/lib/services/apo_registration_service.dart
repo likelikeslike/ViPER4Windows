@@ -120,7 +120,9 @@ foreach (\$ep in Get-ChildItem \$renderPath) {
     \$state = \$props.DeviceState
     if (\$state -ne 1 -and \$state -ne 8) { continue }
     \$fxPath = "\$(\$ep.PSPath)\\FxProperties"
-    if (-not (Test-Path \$fxPath)) { continue }
+    if (-not (Test-Path \$fxPath)) {
+        New-Item -Path \$fxPath -Force | Out-Null
+    }
     \$epId = \$ep.PSChildName
 
 $_takeOwnershipAndGrant
