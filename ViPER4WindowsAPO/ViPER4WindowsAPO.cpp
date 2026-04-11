@@ -802,6 +802,8 @@ void CViPER4WindowsMFX::ApplyParamsToEngine(const ViPERSharedParams &p) {
         p.diffSurroundEnabled);
     cmd(isSpk ? PARAM_SPK_DIFF_SURROUND_DELAY : PARAM_HP_DIFF_SURROUND_DELAY,
         p.diffSurroundDelay);
+    cmd(isSpk ? PARAM_SPK_DIFF_SURROUND_REVERSE : PARAM_HP_DIFF_SURROUND_REVERSE,
+        p.diffSurroundReverse);
 
     cmd(isSpk ? PARAM_SPK_HEADPHONE_SURROUND_ENABLE : PARAM_HP_HEADPHONE_SURROUND_ENABLE,
         p.vheEnabled);

@@ -99,6 +99,24 @@ class SpatialPage extends StatelessWidget {
             },
             onChanged: (v) => state.diffSurroundDelay = v.round(),
           ),
+
+          Row(
+            children: [
+              SizedBox(
+                width: 100,
+                child: Text(
+                  l.diffSurroundReverse,
+                  style: TextStyle(fontSize: 12, color: AppColors.subtitleText),
+                ),
+              ),
+              ToggleSwitch(
+                checked: state.diffSurroundReverse,
+                onChanged: state.masterEnabled
+                    ? (v) => state.diffSurroundReverse = v
+                    : null,
+              ),
+            ],
+          ),
         ],
       ),
     );

@@ -298,7 +298,7 @@ if (\$curComp14 -eq \$viperClsid) {
 \$sfxHasViper = (\$curSfxNew -is [array] -and \$curSfxNew -contains \$viperClsid) -or (\$curSfxNew -eq \$viperClsid)
 if (\$sfxHasViper) {
     if (\$origSfxNew) {
-        \$restored = \$origSfxNew -split '\|'
+        \$restored = \$origSfxNew -split '|'
         Set-ItemProperty -Path \$fxPath -Name "{d3993a3f-99c2-4402-b5ec-a92a0367664b},6" -Value \$restored -Type MultiString -Force
     } else {
         Remove-ItemProperty -Path \$fxPath -Name "{d3993a3f-99c2-4402-b5ec-a92a0367664b},6" -Force -ErrorAction SilentlyContinue
@@ -309,7 +309,7 @@ if (\$sfxHasViper) {
 \$mfxHasViper = (\$curMfxNew -is [array] -and \$curMfxNew -contains \$viperClsid) -or (\$curMfxNew -eq \$viperClsid)
 if (\$mfxHasViper) {
     if (\$origMfxNew) {
-        \$restored = \$origMfxNew -split '\|'
+        \$restored = \$origMfxNew -split '|'
         Set-ItemProperty -Path \$fxPath -Name "{d3993a3f-99c2-4402-b5ec-a92a0367664b},7" -Value \$restored -Type MultiString -Force
     } else {
         Remove-ItemProperty -Path \$fxPath -Name "{d3993a3f-99c2-4402-b5ec-a92a0367664b},7" -Force -ErrorAction SilentlyContinue

@@ -59,61 +59,62 @@ class SharedParamsLayout {
 
   static const diffSurroundEnabled = 284;
   static const diffSurroundDelay = 288;
+  static const diffSurroundReverse = 292;
 
-  static const vheEnabled = 292;
-  static const vheQuality = 296;
+  static const vheEnabled = 296;
+  static const vheQuality = 300;
 
-  static const reverberationEnabled = 300;
-  static const reverberationRoomSize = 304;
-  static const reverberationRoomWidth = 308;
-  static const reverberationRoomDampening = 312;
-  static const reverberationWetSignal = 316;
-  static const reverberationDrySignal = 320;
+  static const reverberationEnabled = 304;
+  static const reverberationRoomSize = 308;
+  static const reverberationRoomWidth = 312;
+  static const reverberationRoomDampening = 316;
+  static const reverberationWetSignal = 320;
+  static const reverberationDrySignal = 324;
 
-  static const dynamicSystemEnabled = 324;
-  static const dynamicSystemXLow = 328;
-  static const dynamicSystemXHigh = 332;
-  static const dynamicSystemYLow = 336;
-  static const dynamicSystemYHigh = 340;
-  static const dynamicSystemSideGainLow = 344;
-  static const dynamicSystemSideGainHigh = 348;
-  static const dynamicSystemStrength = 352;
+  static const dynamicSystemEnabled = 328;
+  static const dynamicSystemXLow = 332;
+  static const dynamicSystemXHigh = 336;
+  static const dynamicSystemYLow = 340;
+  static const dynamicSystemYHigh = 344;
+  static const dynamicSystemSideGainLow = 348;
+  static const dynamicSystemSideGainHigh = 352;
+  static const dynamicSystemStrength = 356;
 
-  static const tubeSimulatorEnabled = 356;
+  static const tubeSimulatorEnabled = 360;
 
-  static const viperBassEnabled = 360;
-  static const viperBassMode = 364;
-  static const viperBassFrequency = 368;
-  static const viperBassGain = 372;
-  static const viperBassAntiPop = 376;
+  static const viperBassEnabled = 364;
+  static const viperBassMode = 368;
+  static const viperBassFrequency = 372;
+  static const viperBassGain = 376;
+  static const viperBassAntiPop = 380;
 
-  static const viperBassMonoEnabled = 380;
-  static const viperBassMonoMode = 384;
-  static const viperBassMonoFrequency = 388;
-  static const viperBassMonoGain = 392;
-  static const viperBassMonoAntiPop = 396;
+  static const viperBassMonoEnabled = 384;
+  static const viperBassMonoMode = 388;
+  static const viperBassMonoFrequency = 392;
+  static const viperBassMonoGain = 396;
+  static const viperBassMonoAntiPop = 400;
 
-  static const viperClarityEnabled = 400;
-  static const viperClarityMode = 404;
-  static const viperClarityGain = 408;
+  static const viperClarityEnabled = 404;
+  static const viperClarityMode = 408;
+  static const viperClarityGain = 412;
 
-  static const cureEnabled = 412;
-  static const cureCrossfeedStrength = 416;
+  static const cureEnabled = 416;
+  static const cureCrossfeedStrength = 420;
 
-  static const analogXEnabled = 420;
-  static const analogXMode = 424;
+  static const analogXEnabled = 424;
+  static const analogXMode = 428;
 
-  static const speakerCorrectionEnabled = 428;
+  static const speakerCorrectionEnabled = 432;
 
-  static const apoSampleRate = 432;
-  static const apoProcessTimeMs = 436;
-  static const apoVersionString = 444;
+  static const apoSampleRate = 436;
+  static const apoProcessTimeMs = 440;
+  static const apoVersionString = 448;
   static const apoVersionStringLen = 32;
-  static const apoArchString = 476;
+  static const apoArchString = 480;
   static const apoArchStringLen = 16;
 
-  static const uiWriteSize = 432;
-  static const totalSize = 492;
+  static const uiWriteSize = 436;
+  static const totalSize = 496;
 }
 
 class SharedParamsSerializer {
@@ -359,6 +360,11 @@ class SharedParamsSerializer {
         state.diffSurroundDelay,
       ),
     );
+    _setU32(
+      data,
+      SharedParamsLayout.diffSurroundReverse,
+      state.diffSurroundReverse ? 1 : 0,
+    );
 
     _setU32(data, SharedParamsLayout.vheEnabled, state.vheEnabled ? 1 : 0);
     _setU32(data, SharedParamsLayout.vheQuality, state.vheQuality);
@@ -573,20 +579,20 @@ class SharedParamsSerializer {
     p(292, u(292));
     p(296, u(296));
     p(300, u(300));
-    p(304, i(304));
+    p(304, u(304));
     p(308, i(308));
     p(312, i(312));
     p(316, i(316));
     p(320, i(320));
-    p(324, u(324));
-    p(328, i(328));
+    p(324, i(324));
+    p(328, u(328));
     p(332, i(332));
     p(336, i(336));
     p(340, i(340));
     p(344, i(344));
     p(348, i(348));
     p(352, i(352));
-    p(356, u(356));
+    p(356, i(356));
     p(360, u(360));
     p(364, u(364));
     p(368, u(368));
@@ -605,6 +611,7 @@ class SharedParamsSerializer {
     p(420, u(420));
     p(424, u(424));
     p(428, u(428));
+    p(432, u(432));
     _log.debugBatch(lines);
   }
 }

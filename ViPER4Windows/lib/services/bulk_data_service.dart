@@ -359,8 +359,9 @@ class BulkDataService {
 
   (List<double>, int)? _decodeWavToFloat(Uint8List wav) {
     if (wav.length < 44) return null;
-    if (wav[0] != 0x52 || wav[1] != 0x49 || wav[2] != 0x46 || wav[3] != 0x46)
+    if (wav[0] != 0x52 || wav[1] != 0x49 || wav[2] != 0x46 || wav[3] != 0x46) {
       return null;
+    }
 
     final bd = ByteData.sublistView(wav);
     final channelCount = bd.getInt16(22, Endian.little);

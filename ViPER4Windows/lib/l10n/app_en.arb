@@ -98,6 +98,7 @@
   "widening": "Widening",
   "midImage": "Mid Image",
   "differentialSurround": "Differential Surround",
+  "diffSurroundReverse": "Reverse",
   "headphoneSurroundPlus": "Headphone Surround+",
   "reverberation": "Reverberation",
   "roomSize": "Room Size",

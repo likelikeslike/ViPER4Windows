@@ -337,7 +337,7 @@ class _EqualizerPageState extends State<EqualizerPage> {
           ),
         ),
         Text(
-          '${clamped.toStringAsFixed(1)}',
+          clamped.toStringAsFixed(1),
           style: const TextStyle(
             fontSize: 9,
             color: AppColors.accent,

@@ -67,6 +67,7 @@ class ModeState {
 
   bool diffSurroundEnabled = false;
   int diffSurroundDelay = 4;
+  bool diffSurroundReverse = false;
 
   bool vheEnabled = false;
   int vheQuality = 0;
@@ -169,6 +170,7 @@ class ModeState {
 
     diffSurroundEnabled = other.diffSurroundEnabled;
     diffSurroundDelay = other.diffSurroundDelay;
+    diffSurroundReverse = other.diffSurroundReverse;
 
     vheEnabled = other.vheEnabled;
     vheQuality = other.vheQuality;
@@ -278,6 +280,7 @@ class ModeState {
 
     'diffSurroundEnabled': diffSurroundEnabled,
     'diffSurroundDelay': diffSurroundDelay,
+    'diffSurroundReverse': diffSurroundReverse,
 
     'vheEnabled': vheEnabled,
     'vheQuality': vheQuality,
@@ -406,6 +409,8 @@ class ModeState {
     diffSurroundEnabled =
         j['diffSurroundEnabled'] as bool? ?? diffSurroundEnabled;
     diffSurroundDelay = j['diffSurroundDelay'] as int? ?? diffSurroundDelay;
+    diffSurroundReverse =
+        j['diffSurroundReverse'] as bool? ?? diffSurroundReverse;
     vheEnabled = j['vheEnabled'] as bool? ?? vheEnabled;
     vheQuality = j['vheQuality'] as int? ?? vheQuality;
     reverberationEnabled =
@@ -565,6 +570,7 @@ class ViperState extends ChangeNotifier {
 
   bool get diffSurroundEnabled => _active.diffSurroundEnabled;
   int get diffSurroundDelay => _active.diffSurroundDelay;
+  bool get diffSurroundReverse => _active.diffSurroundReverse;
 
   bool get vheEnabled => _active.vheEnabled;
   int get vheQuality => _active.vheQuality;
@@ -835,6 +841,10 @@ class ViperState extends ChangeNotifier {
   );
   set diffSurroundDelay(int v) =>
       _set(() => _active.diffSurroundDelay = v, _active.diffSurroundDelay != v);
+  set diffSurroundReverse(bool v) => _set(
+    () => _active.diffSurroundReverse = v,
+    _active.diffSurroundReverse != v,
+  );
 
   set vheEnabled(bool v) =>
       _set(() => _active.vheEnabled = v, _active.vheEnabled != v);

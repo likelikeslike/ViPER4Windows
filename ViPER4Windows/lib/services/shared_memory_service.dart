@@ -159,8 +159,9 @@ class SharedMemoryService {
 
     for (var i = 0; i < writeLen && i < src.length; i++) {
       if (i >= SharedParamsLayout.sequenceNumber &&
-          i < SharedParamsLayout.sequenceNumber + 4)
+          i < SharedParamsLayout.sequenceNumber + 4) {
         continue;
+      }
       dst[i] = src[i];
     }
     for (

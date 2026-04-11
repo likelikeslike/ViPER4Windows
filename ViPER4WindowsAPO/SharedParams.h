@@ -61,6 +61,7 @@ struct ViPERSharedParams {
 
     uint32_t diffSurroundEnabled;
     uint32_t diffSurroundDelay;
+    uint32_t diffSurroundReverse;
 
     uint32_t vheEnabled;
     uint32_t vheQuality;
