@@ -119,4 +119,6 @@ private:
     IAudioProcessingObject *mChildAPO = nullptr;
     IAudioProcessingObjectRT *mChildRT = nullptr;
     IAudioProcessingObjectConfiguration *mChildCfg = nullptr;
+
+    wchar_t mEndpointId[64] = {};
 };

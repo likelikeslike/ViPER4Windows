@@ -151,6 +151,47 @@ STDMETHODIMP CViPER4WindowsMFX::Initialize(UINT32 cbDataSize, BYTE *pbyData) {
     }
 
     ResetChild();
+    mEndpointId[0] = L'\0';
+
+    if (cbDataSize >= sizeof(APOInitSystemEffects2)) {
+        auto *pSysFx2 = reinterpret_cast<APOInitSystemEffects2 *>(pbyData);
+        if (pSysFx2->pAPOEndpointProperties) {
+            PROPVARIANT var;
+            PropVariantInit(&var);
+            PROPERTYKEY pkGuid = {
+                {0x1da5d803,
+                 0xd492,
+                 0x4edd,
+                 {0x8c, 0x23, 0xe0, 0xc0, 0xff, 0xee, 0x7f, 0x0e}},
+                4
+            };
+            if (SUCCEEDED(pSysFx2->pAPOEndpointProperties->GetValue(pkGuid, &var))
+                && var.vt == VT_LPWSTR && var.pwszVal) {
+                wcsncpy_s(mEndpointId, var.pwszVal, _TRUNCATE);
+                ViPERLog("[ViPER] Endpoint ID: %ls\n", mEndpointId);
+            }
+            PropVariantClear(&var);
+        }
+    } else if (cbDataSize >= sizeof(APOInitSystemEffects)) {
+        auto *pSysFx = reinterpret_cast<APOInitSystemEffects *>(pbyData);
+        if (pSysFx->pAPOEndpointProperties) {
+            PROPVARIANT var;
+            PropVariantInit(&var);
+            PROPERTYKEY pkGuid = {
+                {0x1da5d803,
+                 0xd492,
+                 0x4edd,
+                 {0x8c, 0x23, 0xe0, 0xc0, 0xff, 0xee, 0x7f, 0x0e}},
+                4
+            };
+            if (SUCCEEDED(pSysFx->pAPOEndpointProperties->GetValue(pkGuid, &var))
+                && var.vt == VT_LPWSTR && var.pwszVal) {
+                wcsncpy_s(mEndpointId, var.pwszVal, _TRUNCATE);
+                ViPERLog("[ViPER] Endpoint ID: %ls\n", mEndpointId);
+            }
+            PropVariantClear(&var);
+        }
+    }
 
     HKEY hKey = nullptr;
     wchar_t childClsidStr[128] = {};
@@ -158,20 +199,37 @@ STDMETHODIMP CViPER4WindowsMFX::Initialize(UINT32 cbDataSize, BYTE *pbyData) {
     LONG res =
         RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"SOFTWARE\\ViPER4Windows", 0, KEY_READ, &hKey);
     if (res == ERROR_SUCCESS) {
-        res = RegQueryValueExW(
-            hKey,
-            L"OriginalCompMFX",
-            nullptr,
-            nullptr,
-            reinterpret_cast<BYTE *>(childClsidStr),
-            &cbData
-        );
+        if (mEndpointId[0] != L'\0') {
+            wchar_t keyName[128];
+            swprintf_s(keyName, L"OrigCompMFX_%ls", mEndpointId);
+            res = RegQueryValueExW(
+                hKey,
+                keyName,
+                nullptr,
+                nullptr,
+                reinterpret_cast<BYTE *>(childClsidStr),
+                &cbData
+            );
+            if (res != ERROR_SUCCESS || childClsidStr[0] == L'\0') {
+                cbData = sizeof(childClsidStr);
+                memset(childClsidStr, 0, sizeof(childClsidStr));
+                swprintf_s(keyName, L"OrigSFX_%ls", mEndpointId);
+                res = RegQueryValueExW(
+                    hKey,
+                    keyName,
+                    nullptr,
+                    nullptr,
+                    reinterpret_cast<BYTE *>(childClsidStr),
+                    &cbData
+                );
+            }
+        }
         if (res != ERROR_SUCCESS || childClsidStr[0] == L'\0') {
             cbData = sizeof(childClsidStr);
             memset(childClsidStr, 0, sizeof(childClsidStr));
             res = RegQueryValueExW(
                 hKey,
-                L"OriginalSFX",
+                L"OriginalCompMFX",
                 nullptr,
                 nullptr,
                 reinterpret_cast<BYTE *>(childClsidStr),
@@ -183,7 +241,7 @@ STDMETHODIMP CViPER4WindowsMFX::Initialize(UINT32 cbDataSize, BYTE *pbyData) {
             memset(childClsidStr, 0, sizeof(childClsidStr));
             res = RegQueryValueExW(
                 hKey,
-                L"OriginalCompSFX",
+                L"OriginalSFX",
                 nullptr,
                 nullptr,
                 reinterpret_cast<BYTE *>(childClsidStr),
