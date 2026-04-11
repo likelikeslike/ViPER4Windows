@@ -1,3 +1,4 @@
+SHELL     = cmd.exe
 MSBUILD  ?= MSBuild
 FLUTTER  ?= flutter
 ISCC     ?= ISCC
@@ -22,9 +23,11 @@ assets:
 	copy /y $(UI_DIR)\assets\app_icon.ico $(UI_DIR)\windows\runner\resources\app_icon.ico
 
 app: l10n assets
+	@powershell -NoProfile -Command "(Get-Content '$(UI_DIR)\pubspec.yaml') -replace '^version: .*', 'version: $(VERSION_NAME)' | Set-Content '$(UI_DIR)\pubspec.yaml'"
 	cd $(UI_DIR) && $(FLUTTER) clean && $(FLUTTER) pub get && $(FLUTTER) build windows --release
 
 installer: driver app
+	@powershell -NoProfile -Command "(Get-Content '$(ISS_FILE)') -replace '#define MyAppVersion \".*\"', '#define MyAppVersion \"$(VERSION_NAME)\"' | Set-Content '$(ISS_FILE)'"
 	$(ISCC) $(ISS_FILE)
 
 clean:
