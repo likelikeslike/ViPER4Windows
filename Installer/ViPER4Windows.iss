@@ -22,6 +22,10 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 UninstallDisplayIcon={app}\{#MyAppExeName}
 MinVersion=10.0.17763
+AppMutex=Global\ViPER4Windows_SingleInstance
+CloseApplications=force
+RestartApplications=no
+AlwaysRestart=yes
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -36,7 +40,7 @@ Source: "..\ViPER4Windows\build\windows\x64\runner\Release\screen_retriever_wind
 Source: "..\ViPER4Windows\build\windows\x64\runner\Release\system_tray_plugin.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\ViPER4Windows\build\windows\x64\runner\Release\window_manager_plugin.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\ViPER4Windows\build\windows\x64\runner\Release\data\*"; DestDir: "{app}\data"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "..\ViPER4WindowsAPO\build\Release\ViPER4WindowsAPO.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\ViPER4WindowsAPO\build\Release\ViPER4WindowsAPO.dll"; DestDir: "{app}"; Flags: ignoreversion restartreplace uninsrestartdelete
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
@@ -51,6 +55,14 @@ FinishedLabel=Setup has finished installing [name] on your computer.%n%nA reboot
 [Code]
 const
   ViperClsid = '{B5A2C3D4-E6F7-4A8B-9C0D-1E2F3A4B5C6D}';
+
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+var
+  ResultCode: Integer;
+begin
+  Exec('taskkill', '/f /im ViPER4Windows.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Result := '';
+end;
 
 procedure RegisterAPODriver();
 var
@@ -87,10 +99,6 @@ begin
   // Disable protected audio for unsigned APO
   AudioPath := 'SOFTWARE\Microsoft\Windows\CurrentVersion\Audio';
   RegWriteDWordValue(HKLM, AudioPath, 'DisableProtectedAudioDG', 1);
-
-  // Restart audio service
-  Exec('net', 'stop Audiosrv', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-  Exec('net', 'start Audiosrv', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
 end;
 
 procedure UnregisterAPODriver();
@@ -198,9 +206,11 @@ begin
   // Remove DisableProtectedAudioDG
   RegDeleteValue(HKLM, 'SOFTWARE\Microsoft\Windows\CurrentVersion\Audio', 'DisableProtectedAudioDG');
 
-  // Restart audio service
-  Exec('net', 'stop Audiosrv', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-  Exec('net', 'start Audiosrv', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  // sc.exe is non-interactive; net.exe prompts for confirmation when stopping
+  // services with running dependents, which deadlocks under SW_HIDE.
+  Exec('sc', 'stop Audiosrv', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Sleep(2000);
+  Exec('sc', 'start Audiosrv', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
