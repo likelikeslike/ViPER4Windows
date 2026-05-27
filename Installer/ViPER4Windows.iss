@@ -67,7 +67,6 @@ end;
 procedure RegisterAPODriver();
 var
   DllPath, ApoRegPath, AudioPath: String;
-  ResultCode: Integer;
 begin
   DllPath := ExpandConstant('{app}\ViPER4WindowsAPO.dll');
 
