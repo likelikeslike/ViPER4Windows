@@ -1,3 +1,5 @@
+import 'dart:ffi' hide Size;
+
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
@@ -86,14 +88,34 @@ class _ShellState extends State<_Shell> with WindowListener {
     super.dispose();
   }
 
+  Rect? _lastBounds;
+
   @override
   void onWindowClose() async {
     final isPreventClose = await windowManager.isPreventClose();
     if (isPreventClose) {
       _log.info('Window close -> minimize to tray');
+      _lastBounds = await windowManager.getBounds();
       context.read<ViperState>().saveSettingsSync();
       await windowManager.hide();
     }
+  }
+
+  Future<void> _restoreWindow() async {
+    if (_lastBounds != null) {
+      await windowManager.setBounds(_lastBounds);
+    } else {
+      final user32 = DynamicLibrary.open('user32.dll');
+      final fn = user32.lookupFunction<Uint32 Function(), int Function()>(
+        'GetDpiForSystem',
+      );
+      final s = fn() / 96.0;
+      await windowManager.setSize(Size(1100 * s, 720 * s));
+      await windowManager.center();
+    }
+    await windowManager.setMinimumSize(const Size(1100, 720));
+    await windowManager.show();
+    await windowManager.focus();
   }
 
   Future<void> _initTray() async {
@@ -102,10 +124,9 @@ class _ShellState extends State<_Shell> with WindowListener {
       toolTip: 'ViPER4Windows',
     );
 
-    _systemTray.registerSystemTrayEventHandler((eventName) {
+    _systemTray.registerSystemTrayEventHandler((eventName) async {
       if (eventName == kSystemTrayEventClick) {
-        windowManager.show();
-        windowManager.focus();
+        _restoreWindow();
       } else if (eventName == kSystemTrayEventRightClick) {
         _systemTray.popUpContextMenu();
       }
@@ -120,8 +141,7 @@ class _ShellState extends State<_Shell> with WindowListener {
       MenuItemLabel(
         label: l.trayShow,
         onClicked: (_) async {
-          await windowManager.show();
-          await windowManager.focus();
+          await _restoreWindow();
         },
       ),
       MenuSeparator(),
@@ -239,6 +259,8 @@ class _ShellState extends State<_Shell> with WindowListener {
             title: Text(l.navDynamics),
             body: const DynamicsPage(),
           ),
+        ],
+        footerItems: [
           PaneItem(
             icon: Icon(FluentIcons.devices4, size: 16.0),
             title: Text(l.navDevices),
@@ -249,8 +271,6 @@ class _ShellState extends State<_Shell> with WindowListener {
             title: Text(l.navPresets),
             body: const PresetPage(),
           ),
-        ],
-        footerItems: [
           PaneItem(
             icon: Icon(FluentIcons.info, size: 16.0),
             title: Text(l.navDriverStatus),

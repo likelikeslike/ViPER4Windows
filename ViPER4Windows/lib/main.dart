@@ -46,9 +46,12 @@ bool _acquireSingleInstanceLock() {
 
 final _log = AppLogger('Main');
 
-void main() async {
+late final bool isAutoStart;
+
+void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
-  _log.info('App starting');
+  isAutoStart = args.contains('--autostart');
+  _log.info('App starting, args=$args, autostart=$isAutoStart');
 
   if (!_acquireSingleInstanceLock()) {
     _log.warning('Another instance running, exiting');
@@ -58,15 +61,17 @@ void main() async {
 
   await windowManager.ensureInitialized();
   const windowOptions = WindowOptions(
-    size: Size(950, 680),
-    minimumSize: Size(800, 600),
+    size: Size(1100, 720),
+    minimumSize: Size(1100, 720),
     center: true,
     title: 'ViPER4Windows',
   );
-  windowManager.waitUntilReadyToShow(windowOptions, () async {
-    await windowManager.show();
-    await windowManager.focus();
-  });
+  if (!isAutoStart) {
+    windowManager.waitUntilReadyToShow(windowOptions, () async {
+      await windowManager.show();
+      await windowManager.focus();
+    });
+  }
 
   final shm = SharedMemoryService();
   final settings = SettingsService();

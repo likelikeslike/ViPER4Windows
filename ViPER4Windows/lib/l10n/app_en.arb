@@ -182,6 +182,8 @@
   "ipc": "IPC",
   "sharedMemory": "Shared Memory",
   "mfxComponent": "MFX (Component)",
+  "startAtBoot": "Start at Boot",
+
   "statusApoActive": "APO active ({sampleRate} Hz)",
   "@statusApoActive": {
     "placeholders": {

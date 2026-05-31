@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:provider/provider.dart';
 import 'package:viper4windows/l10n/app_localizations.dart';
@@ -19,11 +21,41 @@ class _DriverPageState extends State<DriverPage> {
   final ApoRegistrationService _registration = ApoRegistrationService();
   List<ApoEndpointInfo> _endpoints = [];
   bool _loading = false;
+  bool _startAtBoot = false;
 
   @override
   void initState() {
     super.initState();
     _refreshEndpoints();
+    _checkStartAtBoot();
+  }
+
+  String get _startupVbsPath {
+    final appdata = Platform.environment['APPDATA'] ?? '';
+    return '$appdata\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\ViPER4Windows.vbs';
+  }
+
+  Future<void> _checkStartAtBoot() async {
+    setState(() {
+      _startAtBoot = File(_startupVbsPath).existsSync();
+    });
+  }
+
+  Future<void> _setStartAtBoot(bool enabled) async {
+    if (enabled) {
+      final exe = Platform.resolvedExecutable;
+      File(_startupVbsPath).writeAsStringSync(
+        'WScript.Sleep 15000\r\n'
+        'Set ws = CreateObject("WScript.Shell")\r\n'
+        'ws.CurrentDirectory = "${File(exe).parent.path}"\r\n'
+        'ws.Run """$exe"" --autostart", 0, False\r\n',
+      );
+    } else {
+      try {
+        File(_startupVbsPath).deleteSync();
+      } catch (_) {}
+    }
+    setState(() => _startAtBoot = enabled);
   }
 
   Future<void> _refreshEndpoints() async {
@@ -131,6 +163,8 @@ class _DriverPageState extends State<DriverPage> {
         _buildEndpointsCard(l),
         const SizedBox(height: 12),
         _buildInfoCard(l, state),
+        const SizedBox(height: 12),
+        _buildStartAtBootCard(l),
       ],
     );
   }
@@ -341,6 +375,34 @@ class _DriverPageState extends State<DriverPage> {
           _infoRow(l.apoType, l.mfxComponent),
           const Divider(),
           _infoRow(l.ipc, l.sharedMemory),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStartAtBootCard(S l) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.cardBackground,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.cardBorder),
+      ),
+      child: Row(
+        children: [
+          Text(
+            l.startAtBoot,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: AppColors.enabledText,
+            ),
+          ),
+          const Spacer(),
+          ToggleSwitch(
+            checked: _startAtBoot,
+            onChanged: (v) => _setStartAtBoot(v),
+          ),
         ],
       ),
     );
