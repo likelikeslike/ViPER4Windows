@@ -62,6 +62,8 @@ struct ViPERSharedParams {
     uint32_t diffSurroundEnabled;
     uint32_t diffSurroundDelay;
     uint32_t diffSurroundReverse;
+    int32_t diffSurroundWetDryMix;
+    int32_t diffSurroundLpCutoff;
 
     uint32_t vheEnabled;
     uint32_t vheQuality;
@@ -107,6 +109,55 @@ struct ViPERSharedParams {
     uint32_t analogXMode;
 
     uint32_t speakerCorrectionEnabled;
+
+    uint32_t mbcEnabled;
+    uint32_t mbcBandCount;
+    int32_t mbcThresholds[5];
+    int32_t mbcRatios[5];
+    int32_t mbcKnees[5];
+    uint32_t mbcAutoKnees[5];
+    int32_t mbcGains[5];
+    uint32_t mbcAutoGains[5];
+    int32_t mbcAttacks[5];
+    uint32_t mbcAutoAttacks[5];
+    int32_t mbcReleases[5];
+    uint32_t mbcAutoReleases[5];
+    int32_t mbcKneeMultis[5];
+    int32_t mbcMaxAttacks[5];
+    int32_t mbcMaxReleases[5];
+    int32_t mbcCrests[5];
+    int32_t mbcAdapts[5];
+    uint32_t mbcNoClips[5];
+    uint32_t mbcBandEnables[5];
+    int32_t mbcCrossovers[4];
+
+    uint32_t dynEqEnabled;
+    uint32_t dynEqBandCount;
+    int32_t dynEqFreqs[8];
+    int32_t dynEqQs[8];
+    int32_t dynEqGains[8];
+    int32_t dynEqThresholds[8];
+    int32_t dynEqAttacks[8];
+    int32_t dynEqReleases[8];
+    int32_t dynEqFilterTypes[8];
+
+    uint32_t stereoImagerEnabled;
+    int32_t stereoImagerLowWidth;
+    int32_t stereoImagerMidWidth;
+    int32_t stereoImagerHighWidth;
+    int32_t stereoImagerLowCrossover;
+    int32_t stereoImagerHighCrossover;
+
+    uint32_t lufsEnabled;
+    int32_t lufsTarget;
+    int32_t lufsMaxGain;
+    int32_t lufsSpeed;
+
+    uint32_t psychoBassEnabled;
+    int32_t psychoBassCutoff;
+    int32_t psychoBassIntensity;
+    int32_t psychoBassHarmonicOrder;
+    int32_t psychoBassOriginalLevel;
 
     uint32_t apoSampleRate;
     uint64_t apoProcessTimeMs;

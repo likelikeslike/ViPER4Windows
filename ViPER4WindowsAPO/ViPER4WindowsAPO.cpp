@@ -862,6 +862,10 @@ void CViPER4WindowsMFX::ApplyParamsToEngine(const ViPERSharedParams &p) {
         p.diffSurroundDelay);
     cmd(isSpk ? PARAM_SPK_DIFF_SURROUND_REVERSE : PARAM_HP_DIFF_SURROUND_REVERSE,
         p.diffSurroundReverse);
+    cmd(isSpk ? PARAM_SPK_DIFF_SURROUND_WET_DRY_MIX : PARAM_HP_DIFF_SURROUND_WET_DRY_MIX,
+        p.diffSurroundWetDryMix);
+    cmd(isSpk ? PARAM_SPK_DIFF_SURROUND_LP_CUTOFF : PARAM_HP_DIFF_SURROUND_LP_CUTOFF,
+        p.diffSurroundLpCutoff);
 
     cmd(isSpk ? PARAM_SPK_HEADPHONE_SURROUND_ENABLE : PARAM_HP_HEADPHONE_SURROUND_ENABLE,
         p.vheEnabled);
@@ -928,4 +932,147 @@ void CViPER4WindowsMFX::ApplyParamsToEngine(const ViPERSharedParams &p) {
     cmd(isSpk ? PARAM_SPK_ANALOGX_MODE : PARAM_HP_ANALOGX_MODE, p.analogXMode);
 
     cmd(PARAM_SPK_SPEAKER_CORRECTION_ENABLE, p.speakerCorrectionEnabled);
+
+    cmd(isSpk ? PARAM_SPK_MULTIBAND_COMP_ENABLE : PARAM_HP_MULTIBAND_COMP_ENABLE,
+        p.mbcEnabled);
+    for (int i = 0; i < 5; i++) {
+        cmd(isSpk ? PARAM_SPK_MULTIBAND_COMP_BAND_ENABLE
+                  : PARAM_HP_MULTIBAND_COMP_BAND_ENABLE,
+            i,
+            p.mbcBandEnables[i]);
+        cmd(isSpk ? PARAM_SPK_MULTIBAND_COMP_BAND_THRESHOLD
+                  : PARAM_HP_MULTIBAND_COMP_BAND_THRESHOLD,
+            i,
+            p.mbcThresholds[i]);
+        cmd(isSpk ? PARAM_SPK_MULTIBAND_COMP_BAND_RATIO
+                  : PARAM_HP_MULTIBAND_COMP_BAND_RATIO,
+            i,
+            p.mbcRatios[i]);
+        cmd(isSpk ? PARAM_SPK_MULTIBAND_COMP_BAND_KNEE
+                  : PARAM_HP_MULTIBAND_COMP_BAND_KNEE,
+            i,
+            p.mbcKnees[i]);
+        cmd(isSpk ? PARAM_SPK_MULTIBAND_COMP_BAND_AUTO_GAIN
+                  : PARAM_HP_MULTIBAND_COMP_BAND_AUTO_GAIN,
+            i,
+            p.mbcAutoGains[i]);
+        cmd(isSpk ? PARAM_SPK_MULTIBAND_COMP_BAND_GAIN
+                  : PARAM_HP_MULTIBAND_COMP_BAND_GAIN,
+            i,
+            p.mbcGains[i]);
+        cmd(isSpk ? PARAM_SPK_MULTIBAND_COMP_BAND_AUTO_ATTACK
+                  : PARAM_HP_MULTIBAND_COMP_BAND_AUTO_ATTACK,
+            i,
+            p.mbcAutoAttacks[i]);
+        cmd(isSpk ? PARAM_SPK_MULTIBAND_COMP_BAND_ATTACK
+                  : PARAM_HP_MULTIBAND_COMP_BAND_ATTACK,
+            i,
+            p.mbcAttacks[i]);
+        cmd(isSpk ? PARAM_SPK_MULTIBAND_COMP_BAND_AUTO_RELEASE
+                  : PARAM_HP_MULTIBAND_COMP_BAND_AUTO_RELEASE,
+            i,
+            p.mbcAutoReleases[i]);
+        cmd(isSpk ? PARAM_SPK_MULTIBAND_COMP_BAND_RELEASE
+                  : PARAM_HP_MULTIBAND_COMP_BAND_RELEASE,
+            i,
+            p.mbcReleases[i]);
+        cmd(isSpk ? PARAM_SPK_MULTIBAND_COMP_BAND_AUTO_KNEE
+                  : PARAM_HP_MULTIBAND_COMP_BAND_AUTO_KNEE,
+            i,
+            p.mbcAutoKnees[i]);
+        cmd(isSpk ? PARAM_SPK_MULTIBAND_COMP_BAND_KNEE_MULTI
+                  : PARAM_HP_MULTIBAND_COMP_BAND_KNEE_MULTI,
+            i,
+            p.mbcKneeMultis[i]);
+        cmd(isSpk ? PARAM_SPK_MULTIBAND_COMP_BAND_MAX_ATTACK
+                  : PARAM_HP_MULTIBAND_COMP_BAND_MAX_ATTACK,
+            i,
+            p.mbcMaxAttacks[i]);
+        cmd(isSpk ? PARAM_SPK_MULTIBAND_COMP_BAND_MAX_RELEASE
+                  : PARAM_HP_MULTIBAND_COMP_BAND_MAX_RELEASE,
+            i,
+            p.mbcMaxReleases[i]);
+        cmd(isSpk ? PARAM_SPK_MULTIBAND_COMP_BAND_CREST
+                  : PARAM_HP_MULTIBAND_COMP_BAND_CREST,
+            i,
+            p.mbcCrests[i]);
+        cmd(isSpk ? PARAM_SPK_MULTIBAND_COMP_BAND_ADAPT
+                  : PARAM_HP_MULTIBAND_COMP_BAND_ADAPT,
+            i,
+            p.mbcAdapts[i]);
+        cmd(isSpk ? PARAM_SPK_MULTIBAND_COMP_BAND_NO_CLIP
+                  : PARAM_HP_MULTIBAND_COMP_BAND_NO_CLIP,
+            i,
+            p.mbcNoClips[i]);
+    }
+    for (int i = 0; i < 4; i++) {
+        cmd(isSpk ? PARAM_SPK_MULTIBAND_COMP_CROSSOVER_FREQ
+                  : PARAM_HP_MULTIBAND_COMP_CROSSOVER_FREQ,
+            i,
+            p.mbcCrossovers[i]);
+    }
+    cmd(isSpk ? PARAM_SPK_MULTIBAND_COMP_BAND_COUNT : PARAM_HP_MULTIBAND_COMP_BAND_COUNT,
+        p.mbcBandCount);
+
+    cmd(isSpk ? PARAM_SPK_DYNAMIC_EQ_ENABLE : PARAM_HP_DYNAMIC_EQ_ENABLE, p.dynEqEnabled);
+    for (uint32_t i = 0; i < p.dynEqBandCount && i < 8; i++) {
+        cmd(isSpk ? PARAM_SPK_DYNAMIC_EQ_BAND_FREQ : PARAM_HP_DYNAMIC_EQ_BAND_FREQ,
+            i,
+            p.dynEqFreqs[i]);
+        cmd(isSpk ? PARAM_SPK_DYNAMIC_EQ_BAND_Q : PARAM_HP_DYNAMIC_EQ_BAND_Q,
+            i,
+            p.dynEqQs[i]);
+        cmd(isSpk ? PARAM_SPK_DYNAMIC_EQ_BAND_GAIN : PARAM_HP_DYNAMIC_EQ_BAND_GAIN,
+            i,
+            p.dynEqGains[i]);
+        cmd(isSpk ? PARAM_SPK_DYNAMIC_EQ_BAND_THRESHOLD
+                  : PARAM_HP_DYNAMIC_EQ_BAND_THRESHOLD,
+            i,
+            p.dynEqThresholds[i]);
+        cmd(isSpk ? PARAM_SPK_DYNAMIC_EQ_BAND_ATTACK : PARAM_HP_DYNAMIC_EQ_BAND_ATTACK,
+            i,
+            p.dynEqAttacks[i]);
+        cmd(isSpk ? PARAM_SPK_DYNAMIC_EQ_BAND_RELEASE : PARAM_HP_DYNAMIC_EQ_BAND_RELEASE,
+            i,
+            p.dynEqReleases[i]);
+        cmd(isSpk ? PARAM_SPK_DYNAMIC_EQ_BAND_FILTER_TYPE
+                  : PARAM_HP_DYNAMIC_EQ_BAND_FILTER_TYPE,
+            i,
+            p.dynEqFilterTypes[i]);
+    }
+    cmd(isSpk ? PARAM_SPK_DYNAMIC_EQ_BAND_COUNT : PARAM_HP_DYNAMIC_EQ_BAND_COUNT,
+        p.dynEqBandCount);
+
+    cmd(isSpk ? PARAM_SPK_STEREO_IMAGER_ENABLE : PARAM_HP_STEREO_IMAGER_ENABLE,
+        p.stereoImagerEnabled);
+    cmd(isSpk ? PARAM_SPK_STEREO_IMAGER_LOW_WIDTH : PARAM_HP_STEREO_IMAGER_LOW_WIDTH,
+        p.stereoImagerLowWidth);
+    cmd(isSpk ? PARAM_SPK_STEREO_IMAGER_MID_WIDTH : PARAM_HP_STEREO_IMAGER_MID_WIDTH,
+        p.stereoImagerMidWidth);
+    cmd(isSpk ? PARAM_SPK_STEREO_IMAGER_HIGH_WIDTH : PARAM_HP_STEREO_IMAGER_HIGH_WIDTH,
+        p.stereoImagerHighWidth);
+    cmd(isSpk ? PARAM_SPK_STEREO_IMAGER_LOW_CROSSOVER
+              : PARAM_HP_STEREO_IMAGER_LOW_CROSSOVER,
+        p.stereoImagerLowCrossover);
+    cmd(isSpk ? PARAM_SPK_STEREO_IMAGER_HIGH_CROSSOVER
+              : PARAM_HP_STEREO_IMAGER_HIGH_CROSSOVER,
+        p.stereoImagerHighCrossover);
+
+    cmd(isSpk ? PARAM_SPK_LUFS_ENABLE : PARAM_HP_LUFS_ENABLE, p.lufsEnabled);
+    cmd(isSpk ? PARAM_SPK_LUFS_TARGET : PARAM_HP_LUFS_TARGET, p.lufsTarget);
+    cmd(isSpk ? PARAM_SPK_LUFS_MAX_GAIN : PARAM_HP_LUFS_MAX_GAIN, p.lufsMaxGain);
+    cmd(isSpk ? PARAM_SPK_LUFS_SPEED : PARAM_HP_LUFS_SPEED, p.lufsSpeed);
+
+    cmd(isSpk ? PARAM_SPK_PSYCHO_BASS_ENABLE : PARAM_HP_PSYCHO_BASS_ENABLE,
+        p.psychoBassEnabled);
+    cmd(isSpk ? PARAM_SPK_PSYCHO_BASS_CUTOFF : PARAM_HP_PSYCHO_BASS_CUTOFF,
+        p.psychoBassCutoff);
+    cmd(isSpk ? PARAM_SPK_PSYCHO_BASS_INTENSITY : PARAM_HP_PSYCHO_BASS_INTENSITY,
+        p.psychoBassIntensity);
+    cmd(isSpk ? PARAM_SPK_PSYCHO_BASS_HARMONIC_ORDER
+              : PARAM_HP_PSYCHO_BASS_HARMONIC_ORDER,
+        p.psychoBassHarmonicOrder);
+    cmd(isSpk ? PARAM_SPK_PSYCHO_BASS_ORIGINAL_LEVEL
+              : PARAM_HP_PSYCHO_BASS_ORIGINAL_LEVEL,
+        p.psychoBassOriginalLevel);
 }
