@@ -38,6 +38,34 @@ final _pkeyFormFactorFmtId = _GUID.allocate(0x1DA5D803, 0xD492, 0x4EDD, [
 ]);
 const _pkeyFormFactorPid = 0;
 
+// PKEY_AudioEndpoint_GUID: {1da5d803-d492-4edd-8c23-e0c0ffee7f0e} pid=4
+final _pkeyEndpointGuidFmtId = _GUID.allocate(0x1DA5D803, 0xD492, 0x4EDD, [
+  0x8C,
+  0x23,
+  0xE0,
+  0xC0,
+  0xFF,
+  0xEE,
+  0x7F,
+  0x0E,
+]);
+const _pkeyEndpointGuidPid = 4;
+
+// PKEY_Device_FriendlyName: {a45c254e-df1c-4efd-8020-67d146a850e0} pid=14
+final _pkeyFriendlyNameFmtId = _GUID.allocate(0xA45C254E, 0xDF1C, 0x4EFD, [
+  0x80,
+  0x20,
+  0x67,
+  0xD1,
+  0x46,
+  0xA8,
+  0x50,
+  0xE0,
+]);
+const _pkeyFriendlyNamePid = 14;
+
+const _vtLpwstr = 31;
+
 const _clsctxAll = 0x17;
 const _eRender = 0;
 const _eConsole = 0;
@@ -215,15 +243,149 @@ class DeviceDetectionService {
         );
   }
 
-  OutputDeviceType detectOutputType() {
+  ({String id, String name, bool isHeadphone}) detectActiveDevice() {
+    const fallback = (id: '', name: '', isHeadphone: false);
+    try {
+      return _detectActiveDeviceImpl();
+    } catch (e) {
+      _log.error('detectActiveDevice failed: $e');
+      return fallback;
+    }
+  }
+
+  ({String id, String name, bool isHeadphone}) _detectActiveDeviceImpl() {
+    const fallback = (id: '', name: '', isHeadphone: false);
+    if (!_ensureCom()) return fallback;
+
+    final ppEnumerator = calloc<Pointer>();
+    var hr = _coCreateInstance(
+      _clsidMMDeviceEnumerator,
+      nullptr,
+      _clsctxAll,
+      _iidIMMDeviceEnumerator,
+      ppEnumerator,
+    );
+    if (hr < 0) {
+      calloc.free(ppEnumerator);
+      return fallback;
+    }
+
+    final pEnumerator = ppEnumerator.value;
+    calloc.free(ppEnumerator);
+
+    final ppDevice = calloc<Pointer>();
+    final vtable = pEnumerator.cast<Pointer<Pointer>>().value;
+    final getDefaultEndpoint = vtable[4]
+        .cast<NativeFunction<_GetDefaultAudioEndpointNative>>()
+        .asFunction<_GetDefaultAudioEndpointDart>();
+
+    hr = getDefaultEndpoint(pEnumerator, _eRender, _eConsole, ppDevice);
+    _release(pEnumerator);
+    if (hr < 0) {
+      calloc.free(ppDevice);
+      return fallback;
+    }
+
+    final pDevice = ppDevice.value;
+    calloc.free(ppDevice);
+
+    final ppPropertyStore = calloc<Pointer>();
+    final devVtable = pDevice.cast<Pointer<Pointer>>().value;
+    final openPropertyStore = devVtable[4]
+        .cast<NativeFunction<_OpenPropertyStoreNative>>()
+        .asFunction<_OpenPropertyStoreDart>();
+
+    hr = openPropertyStore(pDevice, _stgmRead, ppPropertyStore);
+    _release(pDevice);
+    if (hr < 0) {
+      calloc.free(ppPropertyStore);
+      return fallback;
+    }
+
+    final pPropertyStore = ppPropertyStore.value;
+    calloc.free(ppPropertyStore);
+
+    final formFactor = _readFormFactorProperty(pPropertyStore);
+    final guid = _readStringProperty(
+      pPropertyStore,
+      _pkeyEndpointGuidFmtId,
+      _pkeyEndpointGuidPid,
+    );
+    final name = _readStringProperty(
+      pPropertyStore,
+      _pkeyFriendlyNameFmtId,
+      _pkeyFriendlyNamePid,
+    );
+    _release(pPropertyStore);
+
+    final isHp =
+        formFactor == _formFactorHeadphones || formFactor == _formFactorHeadset;
+    return (id: guid, name: name, isHeadphone: isHp);
+  }
+
+  bool _ensureCom() {
     if (!_comInitialized) {
       final hr = _coInitializeEx(nullptr, 0x2);
       if (hr < 0 && hr != -2147417850) {
         _log.warning('COM init failed: 0x${hr.toRadixString(16)}');
-        return OutputDeviceType.speaker;
+        return false;
       }
       _comInitialized = true;
     }
+    return true;
+  }
+
+  String _readStringProperty(
+    Pointer pPropertyStore,
+    Pointer<_GUID> fmtId,
+    int pid,
+  ) {
+    final pkey = calloc<_PROPERTYKEY>();
+    pkey.ref.fmtid_data1 = fmtId.ref.data1;
+    pkey.ref.fmtid_data2 = fmtId.ref.data2;
+    pkey.ref.fmtid_data3 = fmtId.ref.data3;
+    pkey.ref.fmtid_data4_0 = fmtId.ref.data4_0;
+    pkey.ref.fmtid_data4_1 = fmtId.ref.data4_1;
+    pkey.ref.fmtid_data4_2 = fmtId.ref.data4_2;
+    pkey.ref.fmtid_data4_3 = fmtId.ref.data4_3;
+    pkey.ref.fmtid_data4_4 = fmtId.ref.data4_4;
+    pkey.ref.fmtid_data4_5 = fmtId.ref.data4_5;
+    pkey.ref.fmtid_data4_6 = fmtId.ref.data4_6;
+    pkey.ref.fmtid_data4_7 = fmtId.ref.data4_7;
+    pkey.ref.pid = pid;
+
+    final propVariant = calloc<Uint8>(24);
+    final vtable = pPropertyStore.cast<Pointer<Pointer>>().value;
+    final getValue = vtable[5]
+        .cast<NativeFunction<_GetValueNative>>()
+        .asFunction<_GetValueDart>();
+
+    final hr = getValue(pPropertyStore, pkey.cast(), propVariant.cast());
+    calloc.free(pkey);
+
+    if (hr < 0) {
+      calloc.free(propVariant);
+      return '';
+    }
+
+    final vt = propVariant.cast<Uint16>().value;
+    String result = '';
+    if (vt == _vtLpwstr) {
+      final pStr = Pointer<Pointer<Utf16>>.fromAddress(
+        propVariant.address + 8,
+      ).value;
+      if (pStr != nullptr) {
+        result = pStr.toDartString();
+      }
+    }
+
+    _propVariantClear(propVariant.cast());
+    calloc.free(propVariant);
+    return result;
+  }
+
+  OutputDeviceType detectOutputType() {
+    if (!_ensureCom()) return OutputDeviceType.speaker;
 
     final ppEnumerator = calloc<Pointer>();
     var hr = _coCreateInstance(
@@ -354,5 +516,7 @@ class DeviceDetectionService {
     calloc.free(_clsidMMDeviceEnumerator);
     calloc.free(_iidIMMDeviceEnumerator);
     calloc.free(_pkeyFormFactorFmtId);
+    calloc.free(_pkeyEndpointGuidFmtId);
+    calloc.free(_pkeyFriendlyNameFmtId);
   }
 }

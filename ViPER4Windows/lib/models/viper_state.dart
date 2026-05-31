@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:viper4windows/models/shared_params.dart';
 import 'package:viper4windows/models/value_mappings.dart';
 import 'package:viper4windows/services/bulk_data_service.dart';
+import 'package:viper4windows/models/device_settings.dart';
 import 'package:viper4windows/services/device_detection_service.dart';
 import 'package:viper4windows/services/file_logger.dart';
 import 'package:viper4windows/services/profile_file_manager.dart';
@@ -488,6 +489,8 @@ class ViperState extends ChangeNotifier {
 
   bool _masterEnabled = true;
   int _fxType = 0;
+  String _currentDeviceId = '';
+  String _currentDeviceName = '';
 
   bool _driverInstalled = false;
   bool _apoProcessing = false;
@@ -502,11 +505,13 @@ class ViperState extends ChangeNotifier {
        _settings = settings {
     _shm.open();
     _bulk.open();
-    final detected = _deviceDetection.detectOutputType();
-    _activeDeviceType = detected == OutputDeviceType.headphone ? 0 : 1;
+    final device = _deviceDetection.detectActiveDevice();
+    _activeDeviceType = device.isHeadphone ? 0 : 1;
     _fxType = _activeDeviceType;
+    _currentDeviceId = device.id;
+    _currentDeviceName = device.name;
     _log.info(
-      'Init: device=${detected == OutputDeviceType.headphone ? "headphone" : "speaker"}',
+      'Init: device=${device.isHeadphone ? "headphone" : "speaker"}, name=${device.name}',
     );
     refreshFileLists();
     _statusTimer = Timer.periodic(
@@ -519,6 +524,8 @@ class ViperState extends ChangeNotifier {
   bool get masterEnabled => _masterEnabled;
   int get fxType => _fxType;
   int get activeDeviceType => _activeDeviceType;
+  String get currentDeviceId => _currentDeviceId;
+  String get currentDeviceName => _currentDeviceName;
 
   int get outputVolume => _active.outputVolume;
   int get channelPan => _active.channelPan;
@@ -1095,8 +1102,18 @@ class ViperState extends ChangeNotifier {
           now >= status.processTimeMs && (now - status.processTimeMs) < 5000;
     }
 
-    final detected = _deviceDetection.detectOutputType();
+    final device = _deviceDetection.detectActiveDevice();
+    final detected = device.isHeadphone
+        ? OutputDeviceType.headphone
+        : OutputDeviceType.speaker;
     handleDeviceTypeChange(detected);
+
+    if (device.id != _currentDeviceId && device.id.isNotEmpty) {
+      _saveCurrentDeviceSettings();
+      _currentDeviceId = device.id;
+      _currentDeviceName = device.name;
+      _loadDeviceSettings(device.id, device.isHeadphone);
+    }
 
     if (_driverInstalled != wasInstalled ||
         _apoProcessing != wasProcessing ||
@@ -1145,6 +1162,7 @@ class ViperState extends ChangeNotifier {
 
   void saveSettingsSync() {
     _saveActiveToMode();
+    _saveCurrentDeviceSettings();
     final data = <String, dynamic>{
       'masterEnabled': _masterEnabled,
       'fxType': _fxType,
@@ -1283,6 +1301,26 @@ class ViperState extends ChangeNotifier {
     refreshFileLists();
   }
 
+  bool presetIsHeadphone(String name) {
+    final path = _fileManager.filePath('$name.json', ProfileFileType.preset);
+    try {
+      final json =
+          jsonDecode(File(path).readAsStringSync()) as Map<String, dynamic>;
+      return (json['mode'] as int? ?? 0) == 0;
+    } catch (_) {
+      return true;
+    }
+  }
+
+  void renamePreset(String oldName, String newName) {
+    _fileManager.renameFile(
+      '$oldName.json',
+      '$newName.json',
+      ProfileFileType.preset,
+    );
+    refreshFileLists();
+  }
+
   void saveEqPreset(String name) {
     final preset = {
       'name': name,
@@ -1412,10 +1450,95 @@ class ViperState extends ChangeNotifier {
     final activeMode = _fxType == 0 ? _headphoneState : _speakerState;
     _loadModeToActive(activeMode);
     _suppressPush = false;
-    pushParams();
+    _ensureDeviceEntry(_currentDeviceId, _activeDeviceType == 0);
+    _loadDeviceSettings(_currentDeviceId, _activeDeviceType == 0);
     _reloadActiveFiles();
     _log.info('Settings restored');
   }
+
+  void _saveCurrentDeviceSettings() {
+    if (_currentDeviceId.isEmpty) return;
+    _saveActiveToMode();
+    final isSpk = _activeDeviceType == 1;
+    final source = isSpk ? _speakerState : _headphoneState;
+    DeviceSettingsManager.saveDevice(
+      _currentDeviceId,
+      _currentDeviceName,
+      !isSpk,
+      source.toJson(),
+    );
+  }
+
+  void _loadDeviceSettings(String deviceId, bool isHeadphone) {
+    final data = DeviceSettingsManager.loadDevice(deviceId);
+    if (data != null && data['settings'] != null) {
+      final settings = data['settings'] as Map<String, dynamic>;
+      final target = isHeadphone ? _headphoneState : _speakerState;
+      target.loadFromJson(settings);
+      _loadModeToActive(target);
+    } else {
+      _ensureDeviceEntry(deviceId, isHeadphone);
+    }
+    pushParams();
+    _scheduleSave();
+  }
+
+  void _ensureDeviceEntry(String deviceId, bool isHeadphone) {
+    if (deviceId.isEmpty) return;
+    if (DeviceSettingsManager.loadDevice(deviceId) != null) return;
+    final source = isHeadphone ? _headphoneState : _speakerState;
+    DeviceSettingsManager.saveDevice(
+      deviceId,
+      _currentDeviceName,
+      isHeadphone,
+      source.toJson(),
+    );
+  }
+
+  void saveDevicePreset(String deviceId) {
+    final data = DeviceSettingsManager.loadDevice(deviceId);
+    if (data == null) return;
+    final isSpk = !(data['isHeadphone'] as bool? ?? true);
+    final source = isSpk ? _speakerState : _headphoneState;
+    DeviceSettingsManager.saveDevice(
+      deviceId,
+      data['deviceName'] as String? ?? '',
+      !isSpk,
+      source.toJson(),
+    );
+  }
+
+  void loadDevicePreset(String deviceId) {
+    final data = DeviceSettingsManager.loadDevice(deviceId);
+    if (data == null) return;
+    final isHp = data['isHeadphone'] as bool? ?? true;
+    final settings = data['settings'] as Map<String, dynamic>?;
+    if (settings == null) return;
+    final target = isHp ? _headphoneState : _speakerState;
+    target.loadFromJson(settings);
+    if ((isHp && _activeDeviceType == 0) || (!isHp && _activeDeviceType == 1)) {
+      _loadModeToActive(target);
+      pushParams();
+    }
+    _scheduleSave();
+    notifyListeners();
+  }
+
+  void renameDevice(String deviceId, String newName) {
+    DeviceSettingsManager.renameDevice(deviceId, newName);
+    if (deviceId == _currentDeviceId) {
+      _currentDeviceName = newName;
+    }
+    notifyListeners();
+  }
+
+  void deleteDevice(String deviceId) {
+    DeviceSettingsManager.deleteDevice(deviceId);
+    notifyListeners();
+  }
+
+  List<Map<String, dynamic>> get deviceList =>
+      DeviceSettingsManager.listDevices();
 
   void _reloadActiveFiles() {
     if (_active.ddcFilePath.isNotEmpty && _active.ddcEnabled) {

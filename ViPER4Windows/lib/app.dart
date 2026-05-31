@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:system_tray/system_tray.dart';
 import 'package:viper4windows/l10n/app_localizations.dart';
 import 'package:viper4windows/models/viper_state.dart';
+import 'package:viper4windows/pages/devices_page.dart';
 import 'package:viper4windows/pages/driver_page.dart';
 import 'package:viper4windows/pages/dynamics_page.dart';
 import 'package:viper4windows/pages/equalizer_page.dart';
@@ -166,6 +167,40 @@ class _ShellState extends State<_Shell> with WindowListener {
         endHeader: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (state.currentDeviceName.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: const Color(0xFF00E676),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(
+                              0xFF00E676,
+                            ).withValues(alpha: 0.5),
+                            blurRadius: 4,
+                            spreadRadius: 1,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      state.currentDeviceName,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF888888),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             _buildFxToggle(state, l),
             const SizedBox(width: 16),
             _buildMasterToggle(state, l),
@@ -203,6 +238,11 @@ class _ShellState extends State<_Shell> with WindowListener {
             icon: Icon(FluentIcons.heart, size: 16.0),
             title: Text(l.navDynamics),
             body: const DynamicsPage(),
+          ),
+          PaneItem(
+            icon: Icon(FluentIcons.devices4, size: 16.0),
+            title: Text(l.navDevices),
+            body: const DevicesPage(),
           ),
           PaneItem(
             icon: Icon(FluentIcons.save_template, size: 16.0),

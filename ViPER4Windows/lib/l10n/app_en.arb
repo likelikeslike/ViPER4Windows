@@ -191,5 +191,18 @@
     }
   },
   "statusApoIdle": "APO connected, idle",
-  "statusApoNotFound": "APO not found"
+  "statusApoNotFound": "APO not found",
+  "navDevices": "Devices",
+  "devicesTitle": "Devices",
+  "deviceTypeHeadphone": "Headphone",
+  "deviceTypeSpeaker": "Speaker",
+  "deviceLabelType": "Type",
+  "deviceLabelId": "Device ID",
+  "deviceLabelLastUsed": "Last Used",
+  "deviceActionLoad": "Load",
+  "deviceActionUpdate": "Update",
+  "deviceActionDelete": "Delete",
+  "deviceRenameTitle": "Rename Device",
+  "deviceRenameHint": "Device name",
+  "deviceNoDevices": "No saved devices"
 }

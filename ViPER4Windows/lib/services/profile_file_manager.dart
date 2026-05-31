@@ -96,6 +96,14 @@ class ProfileFileManager {
 
   String filePath(String name, ProfileFileType type) => '${_dir(type)}\\$name';
 
+  void renameFile(String oldName, String newName, ProfileFileType type) {
+    try {
+      File(filePath(oldName, type)).renameSync(filePath(newName, type));
+    } catch (e) {
+      _log.error('Rename failed: $e');
+    }
+  }
+
   void deleteFile(String name, ProfileFileType type) {
     try {
       File(filePath(name, type)).deleteSync();
