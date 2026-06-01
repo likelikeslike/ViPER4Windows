@@ -29,6 +29,7 @@ class TonePage extends StatelessWidget {
         const SizedBox(height: 16),
         _buildViperBass(state, l),
         _buildViperBassMono(state, l),
+        _buildPsychoBass(state, l),
         _buildViperClarity(state, l),
         _buildSpectrumExtension(state, l),
         _buildTubeSimulator(state, l),
@@ -203,6 +204,54 @@ class TonePage extends StatelessWidget {
                     : null,
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPsychoBass(ViperState state, S l) {
+    return EffectCard(
+      title: l.psychoBass,
+      masterEnabled: state.masterEnabled,
+      enabled: state.psychoBassEnabled,
+      onToggle: (v) => state.psychoBassEnabled = v,
+      child: Column(
+        children: [
+          const SizedBox(height: 8),
+          LabeledSlider(
+            label: l.cutoff,
+            value: state.psychoBassCutoff.toDouble(),
+            min: 60,
+            max: 150,
+            valueFormatter: (v) => '${v.round()} Hz',
+            onChanged: (v) => state.psychoBassCutoff = v.round(),
+          ),
+          LabeledSlider(
+            label: l.intensity,
+            value: state.psychoBassIntensity.toDouble(),
+            min: 0,
+            max: 100,
+            divisions: 100,
+            valueFormatter: (v) => '${v.round()}%',
+            onChanged: (v) => state.psychoBassIntensity = v.round(),
+          ),
+          LabeledSlider(
+            label: l.harmonicOrder,
+            value: state.psychoBassHarmonicOrder.toDouble(),
+            min: 2,
+            max: 5,
+            divisions: 3,
+            onChanged: (v) => state.psychoBassHarmonicOrder = v.round(),
+          ),
+          LabeledSlider(
+            label: l.originalLevel,
+            value: state.psychoBassOriginalLevel.toDouble(),
+            min: 0,
+            max: 100,
+            divisions: 100,
+            valueFormatter: (v) => '${v.round()}%',
+            onChanged: (v) => state.psychoBassOriginalLevel = v.round(),
           ),
         ],
       ),

@@ -206,5 +206,45 @@
   "deviceActionDelete": "Delete",
   "deviceRenameTitle": "Rename Device",
   "deviceRenameHint": "Device name",
-  "deviceNoDevices": "No saved devices"
+  "deviceNoDevices": "No saved devices",
+
+  "wetDryMix": "Wet/Dry",
+  "lpCutoff": "LP Cutoff",
+  "multibandCompressor": "Multiband Compressor",
+  "band": "Band",
+  "crossover": "Crossover",
+  "bandEnabled": "Enable",
+  "dynamicEq": "Dynamic EQ",
+  "targetGain": "Target Gain",
+  "addBand": "Add Band",
+  "deleteBandTitle": "Delete Band",
+  "deleteBandContent": "Delete band {band}?",
+  "@deleteBandContent": {
+    "placeholders": {
+      "band": {
+        "type": "int"
+      }
+    }
+  },
+  "stereoImager": "Stereo Imager",
+  "lowWidth": "Low Width",
+  "midWidth": "Mid Width",
+  "highWidth": "High Width",
+  "lowCrossover": "Low X-over",
+  "highCrossover": "High X-over",
+  "lufsTargeting": "LUFS Targeting",
+  "target": "Target",
+  "psychoBass": "Psychoacoustic Bass",
+  "cutoff": "Cutoff",
+  "intensity": "Intensity",
+  "harmonicOrder": "Harmonics",
+  "originalLevel": "Original",
+  "speed": "Speed",
+  "speedSlow": "Slow",
+  "speedMedium": "Medium",
+  "speedFast": "Fast",
+  "filterType": "Filter",
+  "peak": "Peak",
+  "lowShelf": "Low Shelf",
+  "highShelf": "High Shelf"
 }

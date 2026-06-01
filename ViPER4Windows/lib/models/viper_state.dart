@@ -28,7 +28,7 @@ class ModeState {
   int playbackGainOutputThreshold = 3;
 
   bool fetCompressorEnabled = false;
-  int fetCompressorThreshold = 100;
+  int fetCompressorThreshold = -18;
   int fetCompressorRatio = 100;
   bool fetCompressorAutoKnee = true;
   int fetCompressorKnee = 0;
@@ -36,11 +36,11 @@ class ModeState {
   bool fetCompressorAutoGain = true;
   int fetCompressorGain = 0;
   bool fetCompressorAutoAttack = true;
-  int fetCompressorAttack = 20;
-  int fetCompressorMaxAttack = 80;
+  int fetCompressorAttack = 1;
+  int fetCompressorMaxAttack = 44;
   bool fetCompressorAutoRelease = true;
-  int fetCompressorRelease = 50;
-  int fetCompressorMaxRelease = 100;
+  int fetCompressorRelease = 100;
+  int fetCompressorMaxRelease = 200;
   int fetCompressorCrest = 100;
   int fetCompressorAdapt = 50;
   bool fetCompressorNoClip = true;
@@ -115,6 +115,57 @@ class ModeState {
   int analogXMode = 0;
 
   bool speakerCorrectionEnabled = false;
+
+  int diffSurroundWetDryMix = 100;
+  int diffSurroundLpCutoff = 0;
+
+  bool mbcEnabled = false;
+  List<int> mbcThresholds = List.filled(5, -18);
+  List<int> mbcRatios = List.filled(5, 50);
+  List<int> mbcKnees = List.filled(5, 0);
+  List<bool> mbcAutoKnees = List.filled(5, true);
+  List<int> mbcGains = List.filled(5, 24);
+  List<bool> mbcAutoGains = List.filled(5, true);
+  List<int> mbcAttacks = List.filled(5, 1);
+  List<bool> mbcAutoAttacks = List.filled(5, true);
+  List<int> mbcReleases = List.filled(5, 100);
+  List<bool> mbcAutoReleases = List.filled(5, true);
+  List<int> mbcKneeMultis = List.filled(5, 0);
+  List<int> mbcMaxAttacks = List.filled(5, 44);
+  List<int> mbcMaxReleases = List.filled(5, 200);
+  List<int> mbcCrests = List.filled(5, 100);
+  List<int> mbcAdapts = List.filled(5, 50);
+  List<bool> mbcNoClips = List.filled(5, true);
+  List<bool> mbcBandEnables = List.filled(5, true);
+  List<int> mbcCrossovers = [120, 500, 4000, 8000];
+
+  bool dynEqEnabled = false;
+  int dynEqBandCount = 3;
+  List<int> dynEqFreqs = [60, 150, 400, 1000, 2500, 5000, 8000, 12000];
+  List<int> dynEqQs = [100, 100, 150, 150, 150, 200, 200, 200];
+  List<int> dynEqGains = List.filled(8, 0);
+  List<int> dynEqThresholds = [-300, -300, -250, -250, -200, -200, -200, -200];
+  List<int> dynEqAttacks = List.filled(8, 10);
+  List<int> dynEqReleases = List.filled(8, 100);
+  List<int> dynEqFilterTypes = List.filled(8, 0);
+
+  bool stereoImagerEnabled = false;
+  int stereoImagerLowWidth = 100;
+  int stereoImagerMidWidth = 100;
+  int stereoImagerHighWidth = 100;
+  int stereoImagerLowCrossover = 200;
+  int stereoImagerHighCrossover = 4000;
+
+  bool lufsEnabled = false;
+  int lufsTarget = 140;
+  int lufsMaxGain = 60;
+  int lufsSpeed = 1;
+
+  bool psychoBassEnabled = false;
+  int psychoBassCutoff = 80;
+  int psychoBassIntensity = 50;
+  int psychoBassHarmonicOrder = 3;
+  int psychoBassOriginalLevel = 100;
 
   void copyFrom(ModeState other) {
     mode = other.mode;
@@ -218,6 +269,57 @@ class ModeState {
     analogXMode = other.analogXMode;
 
     speakerCorrectionEnabled = other.speakerCorrectionEnabled;
+
+    diffSurroundWetDryMix = other.diffSurroundWetDryMix;
+    diffSurroundLpCutoff = other.diffSurroundLpCutoff;
+
+    mbcEnabled = other.mbcEnabled;
+    mbcThresholds = List<int>.from(other.mbcThresholds);
+    mbcRatios = List<int>.from(other.mbcRatios);
+    mbcKnees = List<int>.from(other.mbcKnees);
+    mbcAutoKnees = List<bool>.from(other.mbcAutoKnees);
+    mbcGains = List<int>.from(other.mbcGains);
+    mbcAutoGains = List<bool>.from(other.mbcAutoGains);
+    mbcAttacks = List<int>.from(other.mbcAttacks);
+    mbcAutoAttacks = List<bool>.from(other.mbcAutoAttacks);
+    mbcReleases = List<int>.from(other.mbcReleases);
+    mbcAutoReleases = List<bool>.from(other.mbcAutoReleases);
+    mbcKneeMultis = List<int>.from(other.mbcKneeMultis);
+    mbcMaxAttacks = List<int>.from(other.mbcMaxAttacks);
+    mbcMaxReleases = List<int>.from(other.mbcMaxReleases);
+    mbcCrests = List<int>.from(other.mbcCrests);
+    mbcAdapts = List<int>.from(other.mbcAdapts);
+    mbcNoClips = List<bool>.from(other.mbcNoClips);
+    mbcBandEnables = List<bool>.from(other.mbcBandEnables);
+    mbcCrossovers = List<int>.from(other.mbcCrossovers);
+
+    dynEqEnabled = other.dynEqEnabled;
+    dynEqBandCount = other.dynEqBandCount;
+    dynEqFreqs = List<int>.from(other.dynEqFreqs);
+    dynEqQs = List<int>.from(other.dynEqQs);
+    dynEqGains = List<int>.from(other.dynEqGains);
+    dynEqThresholds = List<int>.from(other.dynEqThresholds);
+    dynEqAttacks = List<int>.from(other.dynEqAttacks);
+    dynEqReleases = List<int>.from(other.dynEqReleases);
+    dynEqFilterTypes = List<int>.from(other.dynEqFilterTypes);
+
+    stereoImagerEnabled = other.stereoImagerEnabled;
+    stereoImagerLowWidth = other.stereoImagerLowWidth;
+    stereoImagerMidWidth = other.stereoImagerMidWidth;
+    stereoImagerHighWidth = other.stereoImagerHighWidth;
+    stereoImagerLowCrossover = other.stereoImagerLowCrossover;
+    stereoImagerHighCrossover = other.stereoImagerHighCrossover;
+
+    lufsEnabled = other.lufsEnabled;
+    lufsTarget = other.lufsTarget;
+    lufsMaxGain = other.lufsMaxGain;
+    lufsSpeed = other.lufsSpeed;
+
+    psychoBassEnabled = other.psychoBassEnabled;
+    psychoBassCutoff = other.psychoBassCutoff;
+    psychoBassIntensity = other.psychoBassIntensity;
+    psychoBassHarmonicOrder = other.psychoBassHarmonicOrder;
+    psychoBassOriginalLevel = other.psychoBassOriginalLevel;
   }
 
   ModeState clone() {
@@ -328,6 +430,57 @@ class ModeState {
     'analogXMode': analogXMode,
 
     'speakerCorrectionEnabled': speakerCorrectionEnabled,
+
+    'diffSurroundWetDryMix': diffSurroundWetDryMix,
+    'diffSurroundLpCutoff': diffSurroundLpCutoff,
+
+    'mbcEnabled': mbcEnabled,
+    'mbcThresholds': mbcThresholds,
+    'mbcRatios': mbcRatios,
+    'mbcKnees': mbcKnees,
+    'mbcAutoKnees': mbcAutoKnees,
+    'mbcGains': mbcGains,
+    'mbcAutoGains': mbcAutoGains,
+    'mbcAttacks': mbcAttacks,
+    'mbcAutoAttacks': mbcAutoAttacks,
+    'mbcReleases': mbcReleases,
+    'mbcAutoReleases': mbcAutoReleases,
+    'mbcKneeMultis': mbcKneeMultis,
+    'mbcMaxAttacks': mbcMaxAttacks,
+    'mbcMaxReleases': mbcMaxReleases,
+    'mbcCrests': mbcCrests,
+    'mbcAdapts': mbcAdapts,
+    'mbcNoClips': mbcNoClips,
+    'mbcBandEnables': mbcBandEnables,
+    'mbcCrossovers': mbcCrossovers,
+
+    'dynEqEnabled': dynEqEnabled,
+    'dynEqBandCount': dynEqBandCount,
+    'dynEqFreqs': dynEqFreqs,
+    'dynEqQs': dynEqQs,
+    'dynEqGains': dynEqGains,
+    'dynEqThresholds': dynEqThresholds,
+    'dynEqAttacks': dynEqAttacks,
+    'dynEqReleases': dynEqReleases,
+    'dynEqFilterTypes': dynEqFilterTypes,
+
+    'stereoImagerEnabled': stereoImagerEnabled,
+    'stereoImagerLowWidth': stereoImagerLowWidth,
+    'stereoImagerMidWidth': stereoImagerMidWidth,
+    'stereoImagerHighWidth': stereoImagerHighWidth,
+    'stereoImagerLowCrossover': stereoImagerLowCrossover,
+    'stereoImagerHighCrossover': stereoImagerHighCrossover,
+
+    'lufsEnabled': lufsEnabled,
+    'lufsTarget': lufsTarget,
+    'lufsMaxGain': lufsMaxGain,
+    'lufsSpeed': lufsSpeed,
+
+    'psychoBassEnabled': psychoBassEnabled,
+    'psychoBassCutoff': psychoBassCutoff,
+    'psychoBassIntensity': psychoBassIntensity,
+    'psychoBassHarmonicOrder': psychoBassHarmonicOrder,
+    'psychoBassOriginalLevel': psychoBassOriginalLevel,
   };
 
   void loadFromJson(Map<String, dynamic> j) {
@@ -464,6 +617,160 @@ class ModeState {
     analogXMode = j['analogXMode'] as int? ?? analogXMode;
     speakerCorrectionEnabled =
         j['speakerCorrectionEnabled'] as bool? ?? speakerCorrectionEnabled;
+
+    diffSurroundWetDryMix =
+        j['diffSurroundWetDryMix'] as int? ?? diffSurroundWetDryMix;
+    diffSurroundLpCutoff =
+        j['diffSurroundLpCutoff'] as int? ?? diffSurroundLpCutoff;
+
+    mbcEnabled = j['mbcEnabled'] as bool? ?? mbcEnabled;
+    if (j['mbcThresholds'] is List) {
+      mbcThresholds = (j['mbcThresholds'] as List)
+          .map((e) => (e as num).toInt())
+          .toList();
+    }
+    if (j['mbcRatios'] is List) {
+      mbcRatios = (j['mbcRatios'] as List)
+          .map((e) => (e as num).toInt())
+          .toList();
+    }
+    if (j['mbcKnees'] is List) {
+      mbcKnees = (j['mbcKnees'] as List)
+          .map((e) => (e as num).toInt())
+          .toList();
+    }
+    if (j['mbcAutoKnees'] is List) {
+      mbcAutoKnees = (j['mbcAutoKnees'] as List).map((e) => e as bool).toList();
+    }
+    if (j['mbcGains'] is List) {
+      mbcGains = (j['mbcGains'] as List)
+          .map((e) => (e as num).toInt())
+          .toList();
+    }
+    if (j['mbcAutoGains'] is List) {
+      mbcAutoGains = (j['mbcAutoGains'] as List).map((e) => e as bool).toList();
+    }
+    if (j['mbcAttacks'] is List) {
+      mbcAttacks = (j['mbcAttacks'] as List)
+          .map((e) => (e as num).toInt())
+          .toList();
+    }
+    if (j['mbcAutoAttacks'] is List) {
+      mbcAutoAttacks = (j['mbcAutoAttacks'] as List)
+          .map((e) => e as bool)
+          .toList();
+    }
+    if (j['mbcReleases'] is List) {
+      mbcReleases = (j['mbcReleases'] as List)
+          .map((e) => (e as num).toInt())
+          .toList();
+    }
+    if (j['mbcAutoReleases'] is List) {
+      mbcAutoReleases = (j['mbcAutoReleases'] as List)
+          .map((e) => e as bool)
+          .toList();
+    }
+    if (j['mbcKneeMultis'] is List) {
+      mbcKneeMultis = (j['mbcKneeMultis'] as List)
+          .map((e) => (e as num).toInt())
+          .toList();
+    }
+    if (j['mbcMaxAttacks'] is List) {
+      mbcMaxAttacks = (j['mbcMaxAttacks'] as List)
+          .map((e) => (e as num).toInt())
+          .toList();
+    }
+    if (j['mbcMaxReleases'] is List) {
+      mbcMaxReleases = (j['mbcMaxReleases'] as List)
+          .map((e) => (e as num).toInt())
+          .toList();
+    }
+    if (j['mbcCrests'] is List) {
+      mbcCrests = (j['mbcCrests'] as List)
+          .map((e) => (e as num).toInt())
+          .toList();
+    }
+    if (j['mbcAdapts'] is List) {
+      mbcAdapts = (j['mbcAdapts'] as List)
+          .map((e) => (e as num).toInt())
+          .toList();
+    }
+    if (j['mbcNoClips'] is List) {
+      mbcNoClips = (j['mbcNoClips'] as List).map((e) => e as bool).toList();
+    }
+    if (j['mbcBandEnables'] is List) {
+      mbcBandEnables = (j['mbcBandEnables'] as List)
+          .map((e) => e as bool)
+          .toList();
+    }
+    if (j['mbcCrossovers'] is List) {
+      mbcCrossovers = (j['mbcCrossovers'] as List)
+          .map((e) => (e as num).toInt())
+          .toList();
+    }
+
+    dynEqEnabled = j['dynEqEnabled'] as bool? ?? dynEqEnabled;
+    dynEqBandCount = j['dynEqBandCount'] as int? ?? dynEqBandCount;
+    if (j['dynEqFreqs'] is List) {
+      dynEqFreqs = (j['dynEqFreqs'] as List)
+          .map((e) => (e as num).toInt())
+          .toList();
+    }
+    if (j['dynEqQs'] is List) {
+      dynEqQs = (j['dynEqQs'] as List).map((e) => (e as num).toInt()).toList();
+    }
+    if (j['dynEqGains'] is List) {
+      dynEqGains = (j['dynEqGains'] as List)
+          .map((e) => (e as num).toInt())
+          .toList();
+    }
+    if (j['dynEqThresholds'] is List) {
+      dynEqThresholds = (j['dynEqThresholds'] as List)
+          .map((e) => (e as num).toInt())
+          .toList();
+    }
+    if (j['dynEqAttacks'] is List) {
+      dynEqAttacks = (j['dynEqAttacks'] as List)
+          .map((e) => (e as num).toInt())
+          .toList();
+    }
+    if (j['dynEqReleases'] is List) {
+      dynEqReleases = (j['dynEqReleases'] as List)
+          .map((e) => (e as num).toInt())
+          .toList();
+    }
+    if (j['dynEqFilterTypes'] is List) {
+      dynEqFilterTypes = (j['dynEqFilterTypes'] as List)
+          .map((e) => (e as num).toInt())
+          .toList();
+    }
+
+    stereoImagerEnabled =
+        j['stereoImagerEnabled'] as bool? ?? stereoImagerEnabled;
+    stereoImagerLowWidth =
+        j['stereoImagerLowWidth'] as int? ?? stereoImagerLowWidth;
+    stereoImagerMidWidth =
+        j['stereoImagerMidWidth'] as int? ?? stereoImagerMidWidth;
+    stereoImagerHighWidth =
+        j['stereoImagerHighWidth'] as int? ?? stereoImagerHighWidth;
+    stereoImagerLowCrossover =
+        j['stereoImagerLowCrossover'] as int? ?? stereoImagerLowCrossover;
+    stereoImagerHighCrossover =
+        j['stereoImagerHighCrossover'] as int? ?? stereoImagerHighCrossover;
+
+    lufsEnabled = j['lufsEnabled'] as bool? ?? lufsEnabled;
+    lufsTarget = j['lufsTarget'] as int? ?? lufsTarget;
+    lufsMaxGain = j['lufsMaxGain'] as int? ?? lufsMaxGain;
+    lufsSpeed = j['lufsSpeed'] as int? ?? lufsSpeed;
+
+    psychoBassEnabled = j['psychoBassEnabled'] as bool? ?? psychoBassEnabled;
+    psychoBassCutoff = j['psychoBassCutoff'] as int? ?? psychoBassCutoff;
+    psychoBassIntensity =
+        j['psychoBassIntensity'] as int? ?? psychoBassIntensity;
+    psychoBassHarmonicOrder =
+        j['psychoBassHarmonicOrder'] as int? ?? psychoBassHarmonicOrder;
+    psychoBassOriginalLevel =
+        j['psychoBassOriginalLevel'] as int? ?? psychoBassOriginalLevel;
   }
 }
 
@@ -497,6 +804,7 @@ class ViperState extends ChangeNotifier {
   int _apoSampleRate = 0;
   String _apoVersion = '';
   String _apoArch = '';
+  int _lastProcessedFrames = 0;
 
   ViperState({
     required SharedMemoryService shm,
@@ -624,6 +932,57 @@ class ViperState extends ChangeNotifier {
   int get analogXMode => _active.analogXMode;
 
   bool get speakerCorrectionEnabled => _active.speakerCorrectionEnabled;
+
+  int get diffSurroundWetDryMix => _active.diffSurroundWetDryMix;
+  int get diffSurroundLpCutoff => _active.diffSurroundLpCutoff;
+
+  bool get mbcEnabled => _active.mbcEnabled;
+  List<int> get mbcThresholds => _active.mbcThresholds;
+  List<int> get mbcRatios => _active.mbcRatios;
+  List<int> get mbcKnees => _active.mbcKnees;
+  List<bool> get mbcAutoKnees => _active.mbcAutoKnees;
+  List<int> get mbcGains => _active.mbcGains;
+  List<bool> get mbcAutoGains => _active.mbcAutoGains;
+  List<int> get mbcAttacks => _active.mbcAttacks;
+  List<bool> get mbcAutoAttacks => _active.mbcAutoAttacks;
+  List<int> get mbcReleases => _active.mbcReleases;
+  List<bool> get mbcAutoReleases => _active.mbcAutoReleases;
+  List<int> get mbcKneeMultis => _active.mbcKneeMultis;
+  List<int> get mbcMaxAttacks => _active.mbcMaxAttacks;
+  List<int> get mbcMaxReleases => _active.mbcMaxReleases;
+  List<int> get mbcCrests => _active.mbcCrests;
+  List<int> get mbcAdapts => _active.mbcAdapts;
+  List<bool> get mbcNoClips => _active.mbcNoClips;
+  List<bool> get mbcBandEnables => _active.mbcBandEnables;
+  List<int> get mbcCrossovers => _active.mbcCrossovers;
+
+  bool get dynEqEnabled => _active.dynEqEnabled;
+  int get dynEqBandCount => _active.dynEqBandCount;
+  List<int> get dynEqFreqs => _active.dynEqFreqs;
+  List<int> get dynEqQs => _active.dynEqQs;
+  List<int> get dynEqGains => _active.dynEqGains;
+  List<int> get dynEqThresholds => _active.dynEqThresholds;
+  List<int> get dynEqAttacks => _active.dynEqAttacks;
+  List<int> get dynEqReleases => _active.dynEqReleases;
+  List<int> get dynEqFilterTypes => _active.dynEqFilterTypes;
+
+  bool get stereoImagerEnabled => _active.stereoImagerEnabled;
+  int get stereoImagerLowWidth => _active.stereoImagerLowWidth;
+  int get stereoImagerMidWidth => _active.stereoImagerMidWidth;
+  int get stereoImagerHighWidth => _active.stereoImagerHighWidth;
+  int get stereoImagerLowCrossover => _active.stereoImagerLowCrossover;
+  int get stereoImagerHighCrossover => _active.stereoImagerHighCrossover;
+
+  bool get lufsEnabled => _active.lufsEnabled;
+  int get lufsTarget => _active.lufsTarget;
+  int get lufsMaxGain => _active.lufsMaxGain;
+  int get lufsSpeed => _active.lufsSpeed;
+
+  bool get psychoBassEnabled => _active.psychoBassEnabled;
+  int get psychoBassCutoff => _active.psychoBassCutoff;
+  int get psychoBassIntensity => _active.psychoBassIntensity;
+  int get psychoBassHarmonicOrder => _active.psychoBassHarmonicOrder;
+  int get psychoBassOriginalLevel => _active.psychoBassOriginalLevel;
 
   bool get apoConnected => _driverInstalled;
   bool get apoProcessing => _apoProcessing;
@@ -982,6 +1341,362 @@ class ViperState extends ChangeNotifier {
     _active.speakerCorrectionEnabled != v,
   );
 
+  set diffSurroundWetDryMix(int v) => _set(
+    () => _active.diffSurroundWetDryMix = v,
+    _active.diffSurroundWetDryMix != v,
+  );
+  set diffSurroundLpCutoff(int v) => _set(
+    () => _active.diffSurroundLpCutoff = v,
+    _active.diffSurroundLpCutoff != v,
+  );
+
+  set mbcEnabled(bool v) =>
+      _set(() => _active.mbcEnabled = v, _active.mbcEnabled != v);
+
+  void setMbcThreshold(int band, int value) {
+    if (band < 0 || band >= 5 || _active.mbcThresholds[band] == value) return;
+    _active.mbcThresholds[band] = value;
+    notifyListeners();
+    if (!_suppressPush) {
+      pushParams();
+      _scheduleSave();
+    }
+  }
+
+  void setMbcRatio(int band, int value) {
+    if (band < 0 || band >= 5 || _active.mbcRatios[band] == value) return;
+    _active.mbcRatios[band] = value;
+    notifyListeners();
+    if (!_suppressPush) {
+      pushParams();
+      _scheduleSave();
+    }
+  }
+
+  void setMbcKnee(int band, int value) {
+    if (band < 0 || band >= 5 || _active.mbcKnees[band] == value) return;
+    _active.mbcKnees[band] = value;
+    notifyListeners();
+    if (!_suppressPush) {
+      pushParams();
+      _scheduleSave();
+    }
+  }
+
+  void setMbcAutoKnee(int band, bool value) {
+    if (band < 0 || band >= 5 || _active.mbcAutoKnees[band] == value) return;
+    _active.mbcAutoKnees[band] = value;
+    notifyListeners();
+    if (!_suppressPush) {
+      pushParams();
+      _scheduleSave();
+    }
+  }
+
+  void setMbcGain(int band, int value) {
+    if (band < 0 || band >= 5 || _active.mbcGains[band] == value) return;
+    _active.mbcGains[band] = value;
+    notifyListeners();
+    if (!_suppressPush) {
+      pushParams();
+      _scheduleSave();
+    }
+  }
+
+  void setMbcAutoGain(int band, bool value) {
+    if (band < 0 || band >= 5 || _active.mbcAutoGains[band] == value) return;
+    _active.mbcAutoGains[band] = value;
+    notifyListeners();
+    if (!_suppressPush) {
+      pushParams();
+      _scheduleSave();
+    }
+  }
+
+  void setMbcAttack(int band, int value) {
+    if (band < 0 || band >= 5 || _active.mbcAttacks[band] == value) return;
+    _active.mbcAttacks[band] = value;
+    notifyListeners();
+    if (!_suppressPush) {
+      pushParams();
+      _scheduleSave();
+    }
+  }
+
+  void setMbcAutoAttack(int band, bool value) {
+    if (band < 0 || band >= 5 || _active.mbcAutoAttacks[band] == value) return;
+    _active.mbcAutoAttacks[band] = value;
+    notifyListeners();
+    if (!_suppressPush) {
+      pushParams();
+      _scheduleSave();
+    }
+  }
+
+  void setMbcRelease(int band, int value) {
+    if (band < 0 || band >= 5 || _active.mbcReleases[band] == value) return;
+    _active.mbcReleases[band] = value;
+    notifyListeners();
+    if (!_suppressPush) {
+      pushParams();
+      _scheduleSave();
+    }
+  }
+
+  void setMbcAutoRelease(int band, bool value) {
+    if (band < 0 || band >= 5 || _active.mbcAutoReleases[band] == value) return;
+    _active.mbcAutoReleases[band] = value;
+    notifyListeners();
+    if (!_suppressPush) {
+      pushParams();
+      _scheduleSave();
+    }
+  }
+
+  void setMbcKneeMulti(int band, int value) {
+    if (band < 0 || band >= 5 || _active.mbcKneeMultis[band] == value) return;
+    _active.mbcKneeMultis[band] = value;
+    notifyListeners();
+    if (!_suppressPush) {
+      pushParams();
+      _scheduleSave();
+    }
+  }
+
+  void setMbcMaxAttack(int band, int value) {
+    if (band < 0 || band >= 5 || _active.mbcMaxAttacks[band] == value) return;
+    _active.mbcMaxAttacks[band] = value;
+    notifyListeners();
+    if (!_suppressPush) {
+      pushParams();
+      _scheduleSave();
+    }
+  }
+
+  void setMbcMaxRelease(int band, int value) {
+    if (band < 0 || band >= 5 || _active.mbcMaxReleases[band] == value) return;
+    _active.mbcMaxReleases[band] = value;
+    notifyListeners();
+    if (!_suppressPush) {
+      pushParams();
+      _scheduleSave();
+    }
+  }
+
+  void setMbcCrest(int band, int value) {
+    if (band < 0 || band >= 5 || _active.mbcCrests[band] == value) return;
+    _active.mbcCrests[band] = value;
+    notifyListeners();
+    if (!_suppressPush) {
+      pushParams();
+      _scheduleSave();
+    }
+  }
+
+  void setMbcAdapt(int band, int value) {
+    if (band < 0 || band >= 5 || _active.mbcAdapts[band] == value) return;
+    _active.mbcAdapts[band] = value;
+    notifyListeners();
+    if (!_suppressPush) {
+      pushParams();
+      _scheduleSave();
+    }
+  }
+
+  void setMbcNoClip(int band, bool value) {
+    if (band < 0 || band >= 5 || _active.mbcNoClips[band] == value) return;
+    _active.mbcNoClips[band] = value;
+    notifyListeners();
+    if (!_suppressPush) {
+      pushParams();
+      _scheduleSave();
+    }
+  }
+
+  void setMbcBandEnable(int band, bool value) {
+    if (band < 0 || band >= 5 || _active.mbcBandEnables[band] == value) return;
+    _active.mbcBandEnables[band] = value;
+    notifyListeners();
+    if (!_suppressPush) {
+      pushParams();
+      _scheduleSave();
+    }
+  }
+
+  void setMbcCrossover(int index, int value) {
+    if (index < 0 || index >= 4 || _active.mbcCrossovers[index] == value)
+      return;
+    _active.mbcCrossovers[index] = value;
+    notifyListeners();
+    if (!_suppressPush) {
+      pushParams();
+      _scheduleSave();
+    }
+  }
+
+  set dynEqEnabled(bool v) =>
+      _set(() => _active.dynEqEnabled = v, _active.dynEqEnabled != v);
+  set dynEqBandCount(int v) =>
+      _set(() => _active.dynEqBandCount = v, _active.dynEqBandCount != v);
+
+  void setDynEqFreq(int band, int value) {
+    if (band < 0 || band >= 8 || _active.dynEqFreqs[band] == value) return;
+    _active.dynEqFreqs[band] = value;
+    notifyListeners();
+    if (!_suppressPush) {
+      pushParams();
+      _scheduleSave();
+    }
+  }
+
+  void setDynEqQ(int band, int value) {
+    if (band < 0 || band >= 8 || _active.dynEqQs[band] == value) return;
+    _active.dynEqQs[band] = value;
+    notifyListeners();
+    if (!_suppressPush) {
+      pushParams();
+      _scheduleSave();
+    }
+  }
+
+  void setDynEqGain(int band, int value) {
+    if (band < 0 || band >= 8 || _active.dynEqGains[band] == value) return;
+    _active.dynEqGains[band] = value;
+    notifyListeners();
+    if (!_suppressPush) {
+      pushParams();
+      _scheduleSave();
+    }
+  }
+
+  void setDynEqThreshold(int band, int value) {
+    if (band < 0 || band >= 8 || _active.dynEqThresholds[band] == value) return;
+    _active.dynEqThresholds[band] = value;
+    notifyListeners();
+    if (!_suppressPush) {
+      pushParams();
+      _scheduleSave();
+    }
+  }
+
+  void setDynEqAttack(int band, int value) {
+    if (band < 0 || band >= 8 || _active.dynEqAttacks[band] == value) return;
+    _active.dynEqAttacks[band] = value;
+    notifyListeners();
+    if (!_suppressPush) {
+      pushParams();
+      _scheduleSave();
+    }
+  }
+
+  void setDynEqRelease(int band, int value) {
+    if (band < 0 || band >= 8 || _active.dynEqReleases[band] == value) return;
+    _active.dynEqReleases[band] = value;
+    notifyListeners();
+    if (!_suppressPush) {
+      pushParams();
+      _scheduleSave();
+    }
+  }
+
+  void setDynEqFilterType(int band, int value) {
+    if (band < 0 || band >= 8 || _active.dynEqFilterTypes[band] == value)
+      return;
+    _active.dynEqFilterTypes[band] = value;
+    notifyListeners();
+    if (!_suppressPush) {
+      pushParams();
+      _scheduleSave();
+    }
+  }
+
+  void addDynEqBand() {
+    if (_active.dynEqBandCount >= 8) return;
+    _active.dynEqBandCount++;
+    final maxFreq = _active.dynEqFreqs
+        .sublist(0, _active.dynEqBandCount - 1)
+        .reduce((a, b) => a > b ? a : b);
+    _active.dynEqFreqs[_active.dynEqBandCount - 1] = (maxFreq + 1000).clamp(
+      20,
+      20000,
+    );
+    notifyListeners();
+    if (!_suppressPush) {
+      pushParams();
+      _scheduleSave();
+    }
+  }
+
+  void removeDynEqBand(int band) {
+    if (_active.dynEqBandCount <= 1) return;
+    for (int i = band; i < _active.dynEqBandCount - 1; i++) {
+      _active.dynEqFreqs[i] = _active.dynEqFreqs[i + 1];
+      _active.dynEqQs[i] = _active.dynEqQs[i + 1];
+      _active.dynEqGains[i] = _active.dynEqGains[i + 1];
+      _active.dynEqThresholds[i] = _active.dynEqThresholds[i + 1];
+      _active.dynEqAttacks[i] = _active.dynEqAttacks[i + 1];
+      _active.dynEqReleases[i] = _active.dynEqReleases[i + 1];
+      _active.dynEqFilterTypes[i] = _active.dynEqFilterTypes[i + 1];
+    }
+    _active.dynEqBandCount--;
+    notifyListeners();
+    if (!_suppressPush) {
+      pushParams();
+      _scheduleSave();
+    }
+  }
+
+  set stereoImagerEnabled(bool v) => _set(
+    () => _active.stereoImagerEnabled = v,
+    _active.stereoImagerEnabled != v,
+  );
+  set stereoImagerLowWidth(int v) => _set(
+    () => _active.stereoImagerLowWidth = v,
+    _active.stereoImagerLowWidth != v,
+  );
+  set stereoImagerMidWidth(int v) => _set(
+    () => _active.stereoImagerMidWidth = v,
+    _active.stereoImagerMidWidth != v,
+  );
+  set stereoImagerHighWidth(int v) => _set(
+    () => _active.stereoImagerHighWidth = v,
+    _active.stereoImagerHighWidth != v,
+  );
+  set stereoImagerLowCrossover(int v) => _set(
+    () => _active.stereoImagerLowCrossover = v,
+    _active.stereoImagerLowCrossover != v,
+  );
+  set stereoImagerHighCrossover(int v) => _set(
+    () => _active.stereoImagerHighCrossover = v,
+    _active.stereoImagerHighCrossover != v,
+  );
+
+  set lufsEnabled(bool v) =>
+      _set(() => _active.lufsEnabled = v, _active.lufsEnabled != v);
+  set lufsTarget(int v) =>
+      _set(() => _active.lufsTarget = v, _active.lufsTarget != v);
+  set lufsMaxGain(int v) =>
+      _set(() => _active.lufsMaxGain = v, _active.lufsMaxGain != v);
+  set lufsSpeed(int v) =>
+      _set(() => _active.lufsSpeed = v, _active.lufsSpeed != v);
+
+  set psychoBassEnabled(bool v) =>
+      _set(() => _active.psychoBassEnabled = v, _active.psychoBassEnabled != v);
+  set psychoBassCutoff(int v) =>
+      _set(() => _active.psychoBassCutoff = v, _active.psychoBassCutoff != v);
+  set psychoBassIntensity(int v) => _set(
+    () => _active.psychoBassIntensity = v,
+    _active.psychoBassIntensity != v,
+  );
+  set psychoBassHarmonicOrder(int v) => _set(
+    () => _active.psychoBassHarmonicOrder = v,
+    _active.psychoBassHarmonicOrder != v,
+  );
+  set psychoBassOriginalLevel(int v) => _set(
+    () => _active.psychoBassOriginalLevel = v,
+    _active.psychoBassOriginalLevel != v,
+  );
+
   void setEqualizerBand(int index, double value) {
     if (index < 0 || index >= _active.equalizerBands.length) return;
     if (_active.equalizerBands[index] == value) return;
@@ -1094,13 +1809,10 @@ class ViperState extends ChangeNotifier {
     _apoVersion = status.version;
     _apoArch = status.arch;
 
-    if (status.processTimeMs == 0) {
-      _apoProcessing = status.sampleRate > 0;
-    } else {
-      final now = DateTime.now().millisecondsSinceEpoch;
-      _apoProcessing =
-          now >= status.processTimeMs && (now - status.processTimeMs) < 5000;
-    }
+    _apoProcessing =
+        status.processedFrames > 0 &&
+        status.processedFrames != _lastProcessedFrames;
+    _lastProcessedFrames = status.processedFrames;
 
     final device = _deviceDetection.detectActiveDevice();
     final detected = device.isHeadphone

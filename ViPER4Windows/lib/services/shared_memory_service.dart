@@ -177,10 +177,10 @@ class SharedMemoryService {
     }
   }
 
-  ({int sampleRate, int processTimeMs, String version, String arch})
+  ({int sampleRate, int processedFrames, String version, String arch})
   readApoStatus() {
     if (_pView == null || _pView == nullptr) {
-      return (sampleRate: 0, processTimeMs: 0, version: '', arch: '');
+      return (sampleRate: 0, processedFrames: 0, version: '', arch: '');
     }
 
     final bytes = _pView!.cast<Uint8>();
@@ -195,7 +195,7 @@ class SharedMemoryService {
     for (var i = 0; i < 8; i++) {
       bd2.setUint8(i, bytes[SharedParamsLayout.apoProcessTimeMs + i]);
     }
-    final processTimeMs = bd2.getUint64(0, Endian.little);
+    final processedFrames = bd2.getUint64(0, Endian.little);
 
     final versionBytes = <int>[];
     for (var i = 0; i < SharedParamsLayout.apoVersionStringLen; i++) {
@@ -215,7 +215,7 @@ class SharedMemoryService {
 
     return (
       sampleRate: sampleRate,
-      processTimeMs: processTimeMs,
+      processedFrames: processedFrames,
       version: version,
       arch: arch,
     );

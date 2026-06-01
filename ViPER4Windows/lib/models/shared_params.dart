@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:viper4windows/models/value_mappings.dart';
@@ -60,67 +61,135 @@ class SharedParamsLayout {
   static const diffSurroundEnabled = 284;
   static const diffSurroundDelay = 288;
   static const diffSurroundReverse = 292;
+  static const diffSurroundWetDryMix = 296;
+  static const diffSurroundLpCutoff = 300;
 
-  static const vheEnabled = 296;
-  static const vheQuality = 300;
+  static const vheEnabled = 304;
+  static const vheQuality = 308;
 
-  static const reverberationEnabled = 304;
-  static const reverberationRoomSize = 308;
-  static const reverberationRoomWidth = 312;
-  static const reverberationRoomDampening = 316;
-  static const reverberationWetSignal = 320;
-  static const reverberationDrySignal = 324;
+  static const reverberationEnabled = 312;
+  static const reverberationRoomSize = 316;
+  static const reverberationRoomWidth = 320;
+  static const reverberationRoomDampening = 324;
+  static const reverberationWetSignal = 328;
+  static const reverberationDrySignal = 332;
 
-  static const dynamicSystemEnabled = 328;
-  static const dynamicSystemXLow = 332;
-  static const dynamicSystemXHigh = 336;
-  static const dynamicSystemYLow = 340;
-  static const dynamicSystemYHigh = 344;
-  static const dynamicSystemSideGainLow = 348;
-  static const dynamicSystemSideGainHigh = 352;
-  static const dynamicSystemStrength = 356;
+  static const dynamicSystemEnabled = 336;
+  static const dynamicSystemXLow = 340;
+  static const dynamicSystemXHigh = 344;
+  static const dynamicSystemYLow = 348;
+  static const dynamicSystemYHigh = 352;
+  static const dynamicSystemSideGainLow = 356;
+  static const dynamicSystemSideGainHigh = 360;
+  static const dynamicSystemStrength = 364;
 
-  static const tubeSimulatorEnabled = 360;
+  static const tubeSimulatorEnabled = 368;
 
-  static const viperBassEnabled = 364;
-  static const viperBassMode = 368;
-  static const viperBassFrequency = 372;
-  static const viperBassGain = 376;
-  static const viperBassAntiPop = 380;
+  static const viperBassEnabled = 372;
+  static const viperBassMode = 376;
+  static const viperBassFrequency = 380;
+  static const viperBassGain = 384;
+  static const viperBassAntiPop = 388;
 
-  static const viperBassMonoEnabled = 384;
-  static const viperBassMonoMode = 388;
-  static const viperBassMonoFrequency = 392;
-  static const viperBassMonoGain = 396;
-  static const viperBassMonoAntiPop = 400;
+  static const viperBassMonoEnabled = 392;
+  static const viperBassMonoMode = 396;
+  static const viperBassMonoFrequency = 400;
+  static const viperBassMonoGain = 404;
+  static const viperBassMonoAntiPop = 408;
 
-  static const viperClarityEnabled = 404;
-  static const viperClarityMode = 408;
-  static const viperClarityGain = 412;
+  static const viperClarityEnabled = 412;
+  static const viperClarityMode = 416;
+  static const viperClarityGain = 420;
 
-  static const cureEnabled = 416;
-  static const cureCrossfeedStrength = 420;
+  static const cureEnabled = 424;
+  static const cureCrossfeedStrength = 428;
 
-  static const analogXEnabled = 424;
-  static const analogXMode = 428;
+  static const analogXEnabled = 432;
+  static const analogXMode = 436;
 
-  static const speakerCorrectionEnabled = 432;
+  static const speakerCorrectionEnabled = 440;
 
-  static const apoSampleRate = 436;
-  static const apoProcessTimeMs = 440;
-  static const apoVersionString = 448;
+  static const mbcEnabled = 444;
+  static const mbcBandCount = 448;
+  static const mbcThresholds = 452;
+  static const mbcRatios = 472;
+  static const mbcKnees = 492;
+  static const mbcAutoKnees = 512;
+  static const mbcGains = 532;
+  static const mbcAutoGains = 552;
+  static const mbcAttacks = 572;
+  static const mbcAutoAttacks = 592;
+  static const mbcReleases = 612;
+  static const mbcAutoReleases = 632;
+  static const mbcKneeMultis = 652;
+  static const mbcMaxAttacks = 672;
+  static const mbcMaxReleases = 692;
+  static const mbcCrests = 712;
+  static const mbcAdapts = 732;
+  static const mbcNoClips = 752;
+  static const mbcBandEnables = 772;
+  static const mbcCrossovers = 792;
+
+  static const dynEqEnabled = 808;
+  static const dynEqBandCount = 812;
+  static const dynEqFreqs = 816;
+  static const dynEqQs = 848;
+  static const dynEqGains = 880;
+  static const dynEqThresholds = 912;
+  static const dynEqAttacks = 944;
+  static const dynEqReleases = 976;
+  static const dynEqFilterTypes = 1008;
+
+  static const stereoImagerEnabled = 1040;
+  static const stereoImagerLowWidth = 1044;
+  static const stereoImagerMidWidth = 1048;
+  static const stereoImagerHighWidth = 1052;
+  static const stereoImagerLowCrossover = 1056;
+  static const stereoImagerHighCrossover = 1060;
+
+  static const lufsEnabled = 1064;
+  static const lufsTarget = 1068;
+  static const lufsMaxGain = 1072;
+  static const lufsSpeed = 1076;
+
+  static const psychoBassEnabled = 1080;
+  static const psychoBassCutoff = 1084;
+  static const psychoBassIntensity = 1088;
+  static const psychoBassHarmonicOrder = 1092;
+  static const psychoBassOriginalLevel = 1096;
+
+  static const apoSampleRate = 1100;
+  static const apoProcessTimeMs = 1104;
+  static const apoVersionString = 1112;
   static const apoVersionStringLen = 32;
-  static const apoArchString = 480;
+  static const apoArchString = 1144;
   static const apoArchStringLen = 16;
 
-  static const uiWriteSize = 436;
-  static const totalSize = 496;
+  static const uiWriteSize = 1100;
+  static const totalSize = 1160;
 }
 
 class SharedParamsSerializer {
   SharedParamsSerializer._();
 
   static int _sequence = 0;
+
+  static int _fetThresholdToRaw(int dB) => (dB / -60.0 * 100).round();
+  static int _fetKneeToRaw(int dB) => (dB / 60.0 * 100).round();
+  static int _fetGainToRaw(int dB) => (dB / 60.0 * 100).round();
+  static int _fetAttackMsToRaw(int ms) {
+    final t = ms / 1000.0;
+    if (t <= 0) return 0;
+    final v = (log(t) + 9.21034) / 7.600903;
+    return (v * 100).round().clamp(0, 200);
+  }
+
+  static int _fetReleaseMsToRaw(int ms) {
+    final t = ms / 1000.0;
+    if (t <= 0) return 0;
+    final v = (log(t) + 5.298317) / 5.991465;
+    return (v * 100).round().clamp(0, 200);
+  }
 
   static ByteData serialize(ViperState state) {
     final data = ByteData(SharedParamsLayout.totalSize);
@@ -189,7 +258,7 @@ class SharedParamsSerializer {
     _setI32(
       data,
       SharedParamsLayout.fetCompressorThreshold,
-      state.fetCompressorThreshold,
+      _fetThresholdToRaw(state.fetCompressorThreshold),
     );
     _setI32(
       data,
@@ -204,7 +273,7 @@ class SharedParamsSerializer {
     _setI32(
       data,
       SharedParamsLayout.fetCompressorKnee,
-      state.fetCompressorKnee,
+      _fetKneeToRaw(state.fetCompressorKnee),
     );
     _setI32(
       data,
@@ -219,7 +288,7 @@ class SharedParamsSerializer {
     _setI32(
       data,
       SharedParamsLayout.fetCompressorGain,
-      state.fetCompressorGain,
+      _fetGainToRaw(state.fetCompressorGain),
     );
     _setU32(
       data,
@@ -229,12 +298,12 @@ class SharedParamsSerializer {
     _setI32(
       data,
       SharedParamsLayout.fetCompressorAttack,
-      state.fetCompressorAttack,
+      _fetAttackMsToRaw(state.fetCompressorAttack),
     );
     _setI32(
       data,
       SharedParamsLayout.fetCompressorMaxAttack,
-      state.fetCompressorMaxAttack,
+      _fetAttackMsToRaw(state.fetCompressorMaxAttack),
     );
     _setU32(
       data,
@@ -244,17 +313,17 @@ class SharedParamsSerializer {
     _setI32(
       data,
       SharedParamsLayout.fetCompressorRelease,
-      state.fetCompressorRelease,
+      _fetReleaseMsToRaw(state.fetCompressorRelease),
     );
     _setI32(
       data,
       SharedParamsLayout.fetCompressorMaxRelease,
-      state.fetCompressorMaxRelease,
+      _fetReleaseMsToRaw(state.fetCompressorMaxRelease),
     );
     _setI32(
       data,
       SharedParamsLayout.fetCompressorCrest,
-      state.fetCompressorCrest,
+      _fetReleaseMsToRaw(state.fetCompressorCrest),
     );
     _setI32(
       data,
@@ -364,6 +433,16 @@ class SharedParamsSerializer {
       data,
       SharedParamsLayout.diffSurroundReverse,
       state.diffSurroundReverse ? 1 : 0,
+    );
+    _setI32(
+      data,
+      SharedParamsLayout.diffSurroundWetDryMix,
+      state.diffSurroundWetDryMix,
+    );
+    _setI32(
+      data,
+      SharedParamsLayout.diffSurroundLpCutoff,
+      state.diffSurroundLpCutoff,
     );
 
     _setU32(data, SharedParamsLayout.vheEnabled, state.vheEnabled ? 1 : 0);
@@ -511,6 +590,185 @@ class SharedParamsSerializer {
       state.speakerCorrectionEnabled ? 1 : 0,
     );
 
+    _setU32(data, SharedParamsLayout.mbcEnabled, state.mbcEnabled ? 100 : 0);
+    _setU32(data, SharedParamsLayout.mbcBandCount, 5);
+    for (int i = 0; i < 5; i++) {
+      _setI32(
+        data,
+        SharedParamsLayout.mbcThresholds + i * 4,
+        _fetThresholdToRaw(state.mbcThresholds[i]),
+      );
+      _setI32(data, SharedParamsLayout.mbcRatios + i * 4, state.mbcRatios[i]);
+      _setI32(
+        data,
+        SharedParamsLayout.mbcKnees + i * 4,
+        _fetKneeToRaw(state.mbcKnees[i]),
+      );
+      _setU32(
+        data,
+        SharedParamsLayout.mbcAutoKnees + i * 4,
+        state.mbcAutoKnees[i] ? 100 : 0,
+      );
+      _setI32(
+        data,
+        SharedParamsLayout.mbcGains + i * 4,
+        _fetGainToRaw(state.mbcGains[i]),
+      );
+      _setU32(
+        data,
+        SharedParamsLayout.mbcAutoGains + i * 4,
+        state.mbcAutoGains[i] ? 100 : 0,
+      );
+      _setI32(
+        data,
+        SharedParamsLayout.mbcAttacks + i * 4,
+        _fetAttackMsToRaw(state.mbcAttacks[i]),
+      );
+      _setU32(
+        data,
+        SharedParamsLayout.mbcAutoAttacks + i * 4,
+        state.mbcAutoAttacks[i] ? 100 : 0,
+      );
+      _setI32(
+        data,
+        SharedParamsLayout.mbcReleases + i * 4,
+        _fetReleaseMsToRaw(state.mbcReleases[i]),
+      );
+      _setU32(
+        data,
+        SharedParamsLayout.mbcAutoReleases + i * 4,
+        state.mbcAutoReleases[i] ? 100 : 0,
+      );
+      _setI32(
+        data,
+        SharedParamsLayout.mbcKneeMultis + i * 4,
+        state.mbcKneeMultis[i],
+      );
+      _setI32(
+        data,
+        SharedParamsLayout.mbcMaxAttacks + i * 4,
+        _fetAttackMsToRaw(state.mbcMaxAttacks[i]),
+      );
+      _setI32(
+        data,
+        SharedParamsLayout.mbcMaxReleases + i * 4,
+        _fetReleaseMsToRaw(state.mbcMaxReleases[i]),
+      );
+      _setI32(
+        data,
+        SharedParamsLayout.mbcCrests + i * 4,
+        _fetReleaseMsToRaw(state.mbcCrests[i]),
+      );
+      _setI32(data, SharedParamsLayout.mbcAdapts + i * 4, state.mbcAdapts[i]);
+      _setU32(
+        data,
+        SharedParamsLayout.mbcNoClips + i * 4,
+        state.mbcNoClips[i] ? 100 : 0,
+      );
+      _setU32(
+        data,
+        SharedParamsLayout.mbcBandEnables + i * 4,
+        state.mbcBandEnables[i] ? 100 : 0,
+      );
+    }
+    for (int i = 0; i < 4; i++) {
+      _setI32(
+        data,
+        SharedParamsLayout.mbcCrossovers + i * 4,
+        state.mbcCrossovers[i],
+      );
+    }
+
+    _setU32(
+      data,
+      SharedParamsLayout.dynEqEnabled,
+      state.dynEqEnabled ? 100 : 0,
+    );
+    _setU32(data, SharedParamsLayout.dynEqBandCount, state.dynEqBandCount);
+    for (int i = 0; i < 8; i++) {
+      _setI32(data, SharedParamsLayout.dynEqFreqs + i * 4, state.dynEqFreqs[i]);
+      _setI32(data, SharedParamsLayout.dynEqQs + i * 4, state.dynEqQs[i]);
+      _setI32(data, SharedParamsLayout.dynEqGains + i * 4, state.dynEqGains[i]);
+      _setI32(
+        data,
+        SharedParamsLayout.dynEqThresholds + i * 4,
+        state.dynEqThresholds[i],
+      );
+      _setI32(
+        data,
+        SharedParamsLayout.dynEqAttacks + i * 4,
+        state.dynEqAttacks[i],
+      );
+      _setI32(
+        data,
+        SharedParamsLayout.dynEqReleases + i * 4,
+        state.dynEqReleases[i],
+      );
+      _setI32(
+        data,
+        SharedParamsLayout.dynEqFilterTypes + i * 4,
+        state.dynEqFilterTypes[i],
+      );
+    }
+
+    _setU32(
+      data,
+      SharedParamsLayout.stereoImagerEnabled,
+      state.stereoImagerEnabled ? 1 : 0,
+    );
+    _setI32(
+      data,
+      SharedParamsLayout.stereoImagerLowWidth,
+      state.stereoImagerLowWidth,
+    );
+    _setI32(
+      data,
+      SharedParamsLayout.stereoImagerMidWidth,
+      state.stereoImagerMidWidth,
+    );
+    _setI32(
+      data,
+      SharedParamsLayout.stereoImagerHighWidth,
+      state.stereoImagerHighWidth,
+    );
+    _setI32(
+      data,
+      SharedParamsLayout.stereoImagerLowCrossover,
+      state.stereoImagerLowCrossover,
+    );
+    _setI32(
+      data,
+      SharedParamsLayout.stereoImagerHighCrossover,
+      state.stereoImagerHighCrossover,
+    );
+
+    _setU32(data, SharedParamsLayout.lufsEnabled, state.lufsEnabled ? 1 : 0);
+    _setI32(data, SharedParamsLayout.lufsTarget, state.lufsTarget);
+    _setI32(data, SharedParamsLayout.lufsMaxGain, state.lufsMaxGain);
+    _setI32(data, SharedParamsLayout.lufsSpeed, state.lufsSpeed);
+
+    _setU32(
+      data,
+      SharedParamsLayout.psychoBassEnabled,
+      state.psychoBassEnabled ? 1 : 0,
+    );
+    _setI32(data, SharedParamsLayout.psychoBassCutoff, state.psychoBassCutoff);
+    _setI32(
+      data,
+      SharedParamsLayout.psychoBassIntensity,
+      state.psychoBassIntensity,
+    );
+    _setI32(
+      data,
+      SharedParamsLayout.psychoBassHarmonicOrder,
+      state.psychoBassHarmonicOrder,
+    );
+    _setI32(
+      data,
+      SharedParamsLayout.psychoBassOriginalLevel,
+      state.psychoBassOriginalLevel,
+    );
+
     return data;
   }
 
@@ -577,24 +835,24 @@ class SharedParamsSerializer {
     p(284, u(284));
     p(288, u(288));
     p(292, u(292));
-    p(296, u(296));
-    p(300, u(300));
+    p(296, i(296));
+    p(300, i(300));
     p(304, u(304));
-    p(308, i(308));
-    p(312, i(312));
+    p(308, u(308));
+    p(312, u(312));
     p(316, i(316));
     p(320, i(320));
     p(324, i(324));
-    p(328, u(328));
+    p(328, i(328));
     p(332, i(332));
-    p(336, i(336));
+    p(336, u(336));
     p(340, i(340));
     p(344, i(344));
     p(348, i(348));
     p(352, i(352));
     p(356, i(356));
-    p(360, u(360));
-    p(364, u(364));
+    p(360, i(360));
+    p(364, i(364));
     p(368, u(368));
     p(372, u(372));
     p(376, u(376));
@@ -612,6 +870,21 @@ class SharedParamsSerializer {
     p(424, u(424));
     p(428, u(428));
     p(432, u(432));
+    p(436, u(436));
+    p(440, u(440));
+    p(444, u(444));
+    p(448, u(448));
+    p(708, u(708));
+    p(712, u(712));
+    p(908, u(908));
+    p(932, u(932));
+    p(936, i(936));
+    p(940, i(940));
+    p(944, u(944));
+    p(948, i(948));
+    p(952, i(952));
+    p(956, i(956));
+    p(960, i(960));
     _log.debugBatch(lines);
   }
 }

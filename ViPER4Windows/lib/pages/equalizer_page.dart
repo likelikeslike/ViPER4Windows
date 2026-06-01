@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:provider/provider.dart';
 import 'package:viper4windows/l10n/app_localizations.dart';
@@ -5,6 +7,7 @@ import 'package:viper4windows/models/eq_presets.dart';
 import 'package:viper4windows/models/viper_state.dart';
 import 'package:viper4windows/theme/app_colors.dart';
 import 'package:viper4windows/widgets/effect_card.dart';
+import 'package:viper4windows/widgets/labeled_slider.dart';
 
 class EqualizerPage extends StatefulWidget {
   const EqualizerPage({super.key});
@@ -15,6 +18,7 @@ class EqualizerPage extends StatefulWidget {
 
 class _EqualizerPageState extends State<EqualizerPage> {
   int _selectedPreset = -1;
+  int _dynEqSelectedBand = 0;
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _presetNameController = TextEditingController();
 
@@ -84,6 +88,7 @@ class _EqualizerPageState extends State<EqualizerPage> {
           onToggle: (v) => state.equalizerEnabled = v,
           child: _buildContent(state, bandCount, labels, l),
         ),
+        _buildDynEq(state, l),
       ],
     );
   }
@@ -434,6 +439,237 @@ class _EqualizerPageState extends State<EqualizerPage> {
                 if (idx >= 0) {
                   setState(() => _selectedPreset = 1000 + idx);
                 }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  String _dynEqFreqLabel(int freq) {
+    if (freq < 1000) return '${freq}Hz';
+    if (freq % 1000 == 0) return '${freq ~/ 1000}kHz';
+    return '${(freq / 1000).toStringAsFixed(1)}kHz';
+  }
+
+  Widget _buildDynEq(ViperState state, S l) {
+    final bandCount = state.dynEqBandCount;
+    final int band = _dynEqSelectedBand.clamp(0, max(0, bandCount - 1));
+    if (band != _dynEqSelectedBand) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        setState(() => _dynEqSelectedBand = band);
+      });
+    }
+
+    return EffectCard(
+      title: l.dynamicEq,
+      masterEnabled: state.masterEnabled,
+      enabled: state.dynEqEnabled,
+      onToggle: (v) => state.dynEqEnabled = v,
+      child: Column(
+        children: [
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 32,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                ...List.generate(bandCount, (i) {
+                  final selected = i == band;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 4),
+                    child: ToggleButton(
+                      checked: selected,
+                      onChanged: (_) => setState(() => _dynEqSelectedBand = i),
+                      style: ToggleButtonThemeData(
+                        checkedButtonStyle: ButtonStyle(
+                          backgroundColor: WidgetStateProperty.all(
+                            AppColors.accent,
+                          ),
+                          foregroundColor: WidgetStateProperty.all(
+                            Colors.white,
+                          ),
+                          shape: WidgetStateProperty.all(
+                            RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(4),
+                              side: BorderSide(
+                                color: AppColors.accent,
+                                width: 1,
+                              ),
+                            ),
+                          ),
+                        ),
+                        uncheckedButtonStyle: ButtonStyle(
+                          backgroundColor: WidgetStateProperty.all(
+                            AppColors.cardBorder.withValues(alpha: 0.3),
+                          ),
+                          foregroundColor: WidgetStateProperty.all(
+                            AppColors.subtitleText,
+                          ),
+                          shape: WidgetStateProperty.all(
+                            RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(4),
+                              side: BorderSide(
+                                color: AppColors.cardBorder,
+                                width: 1,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            _dynEqFreqLabel(state.dynEqFreqs[i]),
+                            style: const TextStyle(fontSize: 11),
+                          ),
+                          if (bandCount > 1) ...[
+                            const SizedBox(width: 4),
+                            GestureDetector(
+                              onTap: () =>
+                                  _showDeleteBandDialog(context, state, l, i),
+                              child: Icon(
+                                FluentIcons.chrome_close,
+                                size: 10,
+                                color: selected
+                                    ? Colors.white.withValues(alpha: 0.7)
+                                    : AppColors.subtitleText,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+                if (bandCount < 8)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 4),
+                    child: IconButton(
+                      icon: const Icon(FluentIcons.add, size: 12),
+                      onPressed: () {
+                        state.addDynEqBand();
+                        setState(
+                          () => _dynEqSelectedBand = state.dynEqBandCount - 1,
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          if (bandCount > 0) ...[
+            LabeledSlider(
+              label: l.frequency,
+              value: state.dynEqFreqs[band].toDouble(),
+              min: 20,
+              max: 20000,
+              valueFormatter: (v) => _dynEqFreqLabel(v.round()),
+              onChanged: (v) =>
+                  state.setDynEqFreq(band, ((v.round() + 2) ~/ 5) * 5),
+            ),
+            LabeledSlider(
+              label: l.quality,
+              value: state.dynEqQs[band].toDouble(),
+              min: 50,
+              max: 800,
+              valueFormatter: (v) => (v / 100).toStringAsFixed(1),
+              onChanged: (v) => state.setDynEqQ(band, v.round()),
+            ),
+            LabeledSlider(
+              label: l.targetGain,
+              value: state.dynEqGains[band].toDouble(),
+              min: -120,
+              max: 120,
+              valueFormatter: (v) => '${(v / 10).toStringAsFixed(1)} dB',
+              onChanged: (v) => state.setDynEqGain(band, v.round()),
+            ),
+            LabeledSlider(
+              label: l.threshold,
+              value: state.dynEqThresholds[band].toDouble(),
+              min: -1000,
+              max: 0,
+              valueFormatter: (v) => '${(v / 10).toStringAsFixed(1)} dB',
+              onChanged: (v) => state.setDynEqThreshold(band, v.round()),
+            ),
+            LabeledSlider(
+              label: l.attack,
+              value: state.dynEqAttacks[band].toDouble(),
+              min: 1,
+              max: 100,
+              valueFormatter: (v) => '${v.round()} ms',
+              onChanged: (v) => state.setDynEqAttack(band, v.round()),
+            ),
+            LabeledSlider(
+              label: l.release,
+              value: state.dynEqReleases[band].toDouble(),
+              min: 10,
+              max: 500,
+              valueFormatter: (v) => '${v.round()} ms',
+              onChanged: (v) => state.setDynEqRelease(band, v.round()),
+            ),
+            Row(
+              children: [
+                SizedBox(
+                  width: 100,
+                  child: Text(
+                    l.filterType,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.subtitleText,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: ComboBox<int>(
+                    value: state.dynEqFilterTypes[band],
+                    items: [
+                      ComboBoxItem(value: 0, child: Text(l.peak)),
+                      ComboBoxItem(value: 1, child: Text(l.lowShelf)),
+                      ComboBoxItem(value: 2, child: Text(l.highShelf)),
+                    ],
+                    onChanged: (v) {
+                      if (v != null) state.setDynEqFilterType(band, v);
+                    },
+                    isExpanded: true,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteBandDialog(
+    BuildContext context,
+    ViperState state,
+    S l,
+    int band,
+  ) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return ContentDialog(
+          constraints: const BoxConstraints(maxWidth: 300, maxHeight: 180),
+          title: Text(l.deleteBandTitle),
+          content: Text(l.deleteBandContent(band + 1)),
+          actions: [
+            Button(child: Text(l.cancel), onPressed: () => Navigator.pop(ctx)),
+            FilledButton(
+              child: Text(l.delete),
+              onPressed: () {
+                state.removeDynEqBand(band);
+                setState(() {
+                  if (_dynEqSelectedBand >= state.dynEqBandCount) {
+                    _dynEqSelectedBand = max(0, state.dynEqBandCount - 1);
+                  }
+                });
+                Navigator.pop(ctx);
               },
             ),
           ],

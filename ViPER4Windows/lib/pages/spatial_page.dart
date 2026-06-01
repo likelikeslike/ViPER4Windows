@@ -31,6 +31,7 @@ class SpatialPage extends StatelessWidget {
         _buildDiffSurround(state, l),
         _buildVhe(state, l),
         _buildReverberation(state, l),
+        _buildStereoImager(state, l),
         _buildCure(state, l),
       ],
     );
@@ -117,6 +118,23 @@ class SpatialPage extends StatelessWidget {
               ),
             ],
           ),
+          LabeledSlider(
+            label: l.wetDryMix,
+            value: state.diffSurroundWetDryMix.toDouble(),
+            min: 0,
+            max: 100,
+            divisions: 100,
+            valueFormatter: (v) => '${v.round()}%',
+            onChanged: (v) => state.diffSurroundWetDryMix = v.round(),
+          ),
+          LabeledSlider(
+            label: l.lpCutoff,
+            value: state.diffSurroundLpCutoff.toDouble(),
+            min: 0,
+            max: 20000,
+            valueFormatter: (v) => v.round() == 0 ? 'Off' : '${v.round()} Hz',
+            onChanged: (v) => state.diffSurroundLpCutoff = v.round(),
+          ),
         ],
       ),
     );
@@ -194,6 +212,63 @@ class SpatialPage extends StatelessWidget {
             divisions: 100,
             valueFormatter: (v) => '${v.round()}%',
             onChanged: (v) => state.reverberationDrySignal = v.round(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStereoImager(ViperState state, S l) {
+    return EffectCard(
+      title: l.stereoImager,
+      masterEnabled: state.masterEnabled,
+      enabled: state.stereoImagerEnabled,
+      onToggle: (v) => state.stereoImagerEnabled = v,
+      child: Column(
+        children: [
+          const SizedBox(height: 8),
+          LabeledSlider(
+            label: l.lowWidth,
+            value: state.stereoImagerLowWidth.toDouble(),
+            min: 0,
+            max: 200,
+            divisions: 200,
+            valueFormatter: (v) => '${v.round()}%',
+            onChanged: (v) => state.stereoImagerLowWidth = v.round(),
+          ),
+          LabeledSlider(
+            label: l.midWidth,
+            value: state.stereoImagerMidWidth.toDouble(),
+            min: 0,
+            max: 200,
+            divisions: 200,
+            valueFormatter: (v) => '${v.round()}%',
+            onChanged: (v) => state.stereoImagerMidWidth = v.round(),
+          ),
+          LabeledSlider(
+            label: l.highWidth,
+            value: state.stereoImagerHighWidth.toDouble(),
+            min: 0,
+            max: 200,
+            divisions: 200,
+            valueFormatter: (v) => '${v.round()}%',
+            onChanged: (v) => state.stereoImagerHighWidth = v.round(),
+          ),
+          LabeledSlider(
+            label: l.lowCrossover,
+            value: state.stereoImagerLowCrossover.toDouble(),
+            min: 80,
+            max: 400,
+            valueFormatter: (v) => '${v.round()} Hz',
+            onChanged: (v) => state.stereoImagerLowCrossover = v.round(),
+          ),
+          LabeledSlider(
+            label: l.highCrossover,
+            value: state.stereoImagerHighCrossover.toDouble(),
+            min: 2000,
+            max: 8000,
+            valueFormatter: (v) => '${v.round()} Hz',
+            onChanged: (v) => state.stereoImagerHighCrossover = v.round(),
           ),
         ],
       ),
