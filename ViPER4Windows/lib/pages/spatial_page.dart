@@ -1,7 +1,6 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:provider/provider.dart';
 import 'package:viper4windows/l10n/app_localizations.dart';
-import 'package:viper4windows/models/value_mappings.dart';
 import 'package:viper4windows/models/viper_state.dart';
 import 'package:viper4windows/theme/app_colors.dart';
 import 'package:viper4windows/widgets/effect_card.dart';
@@ -41,34 +40,37 @@ class SpatialPage extends StatelessWidget {
     return EffectCard(
       title: l.fieldSurround,
       masterEnabled: state.masterEnabled,
-      enabled: state.fieldSurroundEnabled,
-      onToggle: (v) => state.fieldSurroundEnabled = v,
+      enabled: state.active.fieldSurround.enabled,
+      onToggle: (v) => state.update((s) => s.fieldSurround.enabled = v),
       child: Column(
         children: [
           const SizedBox(height: 8),
           LabeledSlider(
             label: l.widening,
-            value: state.fieldSurroundWidening.toDouble(),
+            value: state.active.fieldSurround.widening.toDouble(),
             min: 0,
             max: 8,
             divisions: 8,
-            onChanged: (v) => state.fieldSurroundWidening = v.round(),
+            onChanged: (v) =>
+                state.update((s) => s.fieldSurround.widening = v.round()),
           ),
           LabeledSlider(
             label: l.midImage,
-            value: state.fieldSurroundMidImage.toDouble(),
+            value: state.active.fieldSurround.midImage.toDouble(),
             min: 0,
             max: 10,
             divisions: 10,
-            onChanged: (v) => state.fieldSurroundMidImage = v.round(),
+            onChanged: (v) =>
+                state.update((s) => s.fieldSurround.midImage = v.round()),
           ),
           LabeledSlider(
             label: l.depth,
-            value: state.fieldSurroundDepth.toDouble(),
+            value: state.active.fieldSurround.depth.toDouble(),
             min: 0,
             max: 10,
             divisions: 10,
-            onChanged: (v) => state.fieldSurroundDepth = v.round(),
+            onChanged: (v) =>
+                state.update((s) => s.fieldSurround.depth = v.round()),
           ),
         ],
       ),
@@ -79,26 +81,20 @@ class SpatialPage extends StatelessWidget {
     return EffectCard(
       title: l.differentialSurround,
       masterEnabled: state.masterEnabled,
-      enabled: state.diffSurroundEnabled,
-      onToggle: (v) => state.diffSurroundEnabled = v,
+      enabled: state.active.diffSurround.enabled,
+      onToggle: (v) => state.update((s) => s.diffSurround.enabled = v),
       child: Column(
         children: [
           const SizedBox(height: 8),
           LabeledSlider(
             label: l.delay,
-            value: state.diffSurroundDelay.toDouble(),
-            min: 0,
-            max: 19,
+            value: state.active.diffSurround.delay.toDouble(),
+            min: 1,
+            max: 20,
             divisions: 19,
-            valueFormatter: (v) {
-              final idx = v.round();
-              final ms = ValueMappings.safeIndex(
-                ValueMappings.diffSurroundDelayValues,
-                idx,
-              );
-              return '${ms ~/ 100}ms';
-            },
-            onChanged: (v) => state.diffSurroundDelay = v.round(),
+            valueFormatter: (v) => '${v.round()} ms',
+            onChanged: (v) =>
+                state.update((s) => s.diffSurround.delay = v.round()),
           ),
 
           Row(
@@ -111,29 +107,32 @@ class SpatialPage extends StatelessWidget {
                 ),
               ),
               ToggleSwitch(
-                checked: state.diffSurroundReverse,
+                checked: state.active.diffSurround.reverse,
                 onChanged: state.masterEnabled
-                    ? (v) => state.diffSurroundReverse = v
+                    ? (v) => state.update((s) => s.diffSurround.reverse = v)
                     : null,
               ),
             ],
           ),
           LabeledSlider(
             label: l.wetDryMix,
-            value: state.diffSurroundWetDryMix.toDouble(),
+            value: state.active.diffSurround.wetDryMix.toDouble(),
             min: 0,
             max: 100,
             divisions: 100,
             valueFormatter: (v) => '${v.round()}%',
-            onChanged: (v) => state.diffSurroundWetDryMix = v.round(),
+            onChanged: (v) =>
+                state.update((s) => s.diffSurround.wetDryMix = v.round()),
           ),
           LabeledSlider(
             label: l.lpCutoff,
-            value: state.diffSurroundLpCutoff.toDouble(),
+            value: state.active.diffSurround.lpCutoff.toDouble(),
             min: 0,
             max: 20000,
+            divisions: 4000,
             valueFormatter: (v) => v.round() == 0 ? 'Off' : '${v.round()} Hz',
-            onChanged: (v) => state.diffSurroundLpCutoff = v.round(),
+            onChanged: (v) =>
+                state.update((s) => s.diffSurround.lpCutoff = v.round()),
           ),
         ],
       ),
@@ -144,18 +143,18 @@ class SpatialPage extends StatelessWidget {
     return EffectCard(
       title: l.headphoneSurroundPlus,
       masterEnabled: state.masterEnabled,
-      enabled: state.vheEnabled,
-      onToggle: (v) => state.vheEnabled = v,
+      enabled: state.active.vhe.enabled,
+      onToggle: (v) => state.update((s) => s.vhe.enabled = v),
       child: Column(
         children: [
           const SizedBox(height: 8),
           LabeledSlider(
             label: l.quality,
-            value: state.vheQuality.toDouble(),
+            value: state.active.vhe.quality.toDouble(),
             min: 0,
             max: 4,
             divisions: 4,
-            onChanged: (v) => state.vheQuality = v.round(),
+            onChanged: (v) => state.update((s) => s.vhe.quality = v.round()),
           ),
         ],
       ),
@@ -166,52 +165,54 @@ class SpatialPage extends StatelessWidget {
     return EffectCard(
       title: l.reverberation,
       masterEnabled: state.masterEnabled,
-      enabled: state.reverberationEnabled,
-      onToggle: (v) => state.reverberationEnabled = v,
+      enabled: state.active.reverb.enabled,
+      onToggle: (v) => state.update((s) => s.reverb.enabled = v),
       child: Column(
         children: [
           const SizedBox(height: 8),
           LabeledSlider(
             label: l.roomSize,
-            value: state.reverberationRoomSize.toDouble(),
+            value: state.active.reverb.roomSize.toDouble(),
             min: 0,
             max: 10,
             divisions: 10,
-            onChanged: (v) => state.reverberationRoomSize = v.round(),
+            onChanged: (v) =>
+                state.update((s) => s.reverb.roomSize = v.round()),
           ),
           LabeledSlider(
             label: l.width,
-            value: state.reverberationRoomWidth.toDouble(),
+            value: state.active.reverb.width.toDouble(),
             min: 0,
             max: 10,
             divisions: 10,
-            onChanged: (v) => state.reverberationRoomWidth = v.round(),
+            onChanged: (v) => state.update((s) => s.reverb.width = v.round()),
           ),
           LabeledSlider(
             label: l.dampening,
-            value: state.reverberationRoomDampening.toDouble(),
+            value: state.active.reverb.roomDampening.toDouble(),
             min: 0,
             max: 10,
             divisions: 10,
-            onChanged: (v) => state.reverberationRoomDampening = v.round(),
+            onChanged: (v) =>
+                state.update((s) => s.reverb.roomDampening = v.round()),
           ),
           LabeledSlider(
             label: l.wetSignal,
-            value: state.reverberationWetSignal.toDouble(),
+            value: state.active.reverb.wet.toDouble(),
             min: 0,
             max: 100,
             divisions: 100,
             valueFormatter: (v) => '${v.round()}%',
-            onChanged: (v) => state.reverberationWetSignal = v.round(),
+            onChanged: (v) => state.update((s) => s.reverb.wet = v.round()),
           ),
           LabeledSlider(
             label: l.drySignal,
-            value: state.reverberationDrySignal.toDouble(),
+            value: state.active.reverb.dry.toDouble(),
             min: 0,
             max: 100,
             divisions: 100,
             valueFormatter: (v) => '${v.round()}%',
-            onChanged: (v) => state.reverberationDrySignal = v.round(),
+            onChanged: (v) => state.update((s) => s.reverb.dry = v.round()),
           ),
         ],
       ),
@@ -222,53 +223,60 @@ class SpatialPage extends StatelessWidget {
     return EffectCard(
       title: l.stereoImager,
       masterEnabled: state.masterEnabled,
-      enabled: state.stereoImagerEnabled,
-      onToggle: (v) => state.stereoImagerEnabled = v,
+      enabled: state.active.stereoImager.enabled,
+      onToggle: (v) => state.update((s) => s.stereoImager.enabled = v),
       child: Column(
         children: [
           const SizedBox(height: 8),
           LabeledSlider(
             label: l.lowWidth,
-            value: state.stereoImagerLowWidth.toDouble(),
+            value: state.active.stereoImager.lowWidth.toDouble(),
             min: 0,
             max: 200,
             divisions: 200,
             valueFormatter: (v) => '${v.round()}%',
-            onChanged: (v) => state.stereoImagerLowWidth = v.round(),
+            onChanged: (v) =>
+                state.update((s) => s.stereoImager.lowWidth = v.round()),
           ),
           LabeledSlider(
             label: l.midWidth,
-            value: state.stereoImagerMidWidth.toDouble(),
+            value: state.active.stereoImager.midWidth.toDouble(),
             min: 0,
             max: 200,
             divisions: 200,
             valueFormatter: (v) => '${v.round()}%',
-            onChanged: (v) => state.stereoImagerMidWidth = v.round(),
+            onChanged: (v) =>
+                state.update((s) => s.stereoImager.midWidth = v.round()),
           ),
           LabeledSlider(
             label: l.highWidth,
-            value: state.stereoImagerHighWidth.toDouble(),
+            value: state.active.stereoImager.highWidth.toDouble(),
             min: 0,
             max: 200,
             divisions: 200,
             valueFormatter: (v) => '${v.round()}%',
-            onChanged: (v) => state.stereoImagerHighWidth = v.round(),
+            onChanged: (v) =>
+                state.update((s) => s.stereoImager.highWidth = v.round()),
           ),
           LabeledSlider(
             label: l.lowCrossover,
-            value: state.stereoImagerLowCrossover.toDouble(),
+            value: state.active.stereoImager.lowCrossover.toDouble(),
             min: 80,
             max: 400,
+            divisions: 64,
             valueFormatter: (v) => '${v.round()} Hz',
-            onChanged: (v) => state.stereoImagerLowCrossover = v.round(),
+            onChanged: (v) =>
+                state.update((s) => s.stereoImager.lowCrossover = v.round()),
           ),
           LabeledSlider(
             label: l.highCrossover,
-            value: state.stereoImagerHighCrossover.toDouble(),
+            value: state.active.stereoImager.highCrossover.toDouble(),
             min: 2000,
             max: 8000,
+            divisions: 1200,
             valueFormatter: (v) => '${v.round()} Hz',
-            onChanged: (v) => state.stereoImagerHighCrossover = v.round(),
+            onChanged: (v) =>
+                state.update((s) => s.stereoImager.highCrossover = v.round()),
           ),
         ],
       ),
@@ -279,8 +287,8 @@ class SpatialPage extends StatelessWidget {
     return EffectCard(
       title: l.auditorySystemProtection,
       masterEnabled: state.masterEnabled,
-      enabled: state.cureEnabled,
-      onToggle: (v) => state.cureEnabled = v,
+      enabled: state.active.cure.enabled,
+      onToggle: (v) => state.update((s) => s.cure.enabled = v),
       child: Column(
         children: [
           const SizedBox(height: 8),
@@ -295,14 +303,14 @@ class SpatialPage extends StatelessWidget {
               ),
               Expanded(
                 child: ComboBox<int>(
-                  value: state.cureCrossfeedStrength,
+                  value: state.active.cure.strength,
                   items: [
-                    ComboBoxItem(value: 0, child: Text(l.cureMild)),
-                    ComboBoxItem(value: 1, child: Text(l.cureMedium)),
-                    ComboBoxItem(value: 2, child: Text(l.cureStrong)),
+                    ComboBoxItem(value: 0, child: Text(l.mild)),
+                    ComboBoxItem(value: 1, child: Text(l.medium)),
+                    ComboBoxItem(value: 2, child: Text(l.strong)),
                   ],
                   onChanged: (v) {
-                    if (v != null) state.cureCrossfeedStrength = v;
+                    if (v != null) state.update((s) => s.cure.strength = v);
                   },
                   isExpanded: true,
                 ),

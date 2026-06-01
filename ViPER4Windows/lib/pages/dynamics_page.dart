@@ -4,7 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:provider/provider.dart';
 
-import 'package:viper4windows/models/value_mappings.dart';
+import 'package:viper4windows/models/dynamic_system_preset.dart';
 import 'package:viper4windows/models/viper_state.dart';
 import 'package:viper4windows/widgets/effect_card.dart';
 import 'package:viper4windows/widgets/labeled_slider.dart';
@@ -62,11 +62,11 @@ class _DynamicsPageState extends State<DynamicsPage> {
     final userPresets = state.dsPresetFiles;
     final items = <ComboBoxItem<int>>[
       ...List.generate(
-        ValueMappings.dynamicSystemDevices.length,
+        DsDevices.builtins.length,
         (i) => ComboBoxItem<int>(
           value: i,
           child: Text(
-            ValueMappings.dynamicSystemDevices[i].$1,
+            DsDevices.builtins[i].nameOf(l),
             style: const TextStyle(fontSize: 12),
           ),
         ),
@@ -85,8 +85,8 @@ class _DynamicsPageState extends State<DynamicsPage> {
     return EffectCard(
       title: l.dynamicSystem,
       masterEnabled: state.masterEnabled,
-      enabled: state.dynamicSystemEnabled,
-      onToggle: (v) => state.dynamicSystemEnabled = v,
+      enabled: state.active.dynamicSystem.enabled,
+      onToggle: (v) => state.update((s) => s.dynamicSystem.enabled = v),
       child: Column(
         children: [
           const SizedBox(height: 8),
@@ -112,7 +112,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
                         setState(() => _selectedDsPreset = v);
                       }
                     } else {
-                      state.dynamicSystemDevice = v;
+                      state.setDynamicSystemDevice(v);
                       setState(() => _selectedDsPreset = v);
                     }
                   },
@@ -139,66 +139,73 @@ class _DynamicsPageState extends State<DynamicsPage> {
           ),
           LabeledSlider(
             label: l.strength,
-            value: state.dynamicSystemStrength.toDouble(),
+            value: state.active.dynamicSystem.strength.toDouble(),
             min: 0,
             max: 100,
             divisions: 100,
             valueFormatter: (v) => '${v.round()}%',
-            onChanged: (v) => state.dynamicSystemStrength = v.round(),
+            onChanged: (v) =>
+                state.update((s) => s.dynamicSystem.strength = v.round()),
           ),
           LabeledSlider(
             label: l.xLowFreq,
-            value: state.dsXLow.toDouble(),
+            value: state.active.dynamicSystem.xLow.toDouble(),
             min: 0,
             max: 2400,
-            divisions: 24,
+            divisions: 480,
             valueFormatter: (v) => '${v.round()} Hz',
-            onChanged: (v) => state.dsXLow = v.round(),
+            onChanged: (v) =>
+                state.update((s) => s.dynamicSystem.xLow = v.round()),
           ),
           LabeledSlider(
             label: l.xHighFreq,
-            value: state.dsXHigh.toDouble(),
+            value: state.active.dynamicSystem.xHigh.toDouble(),
             min: 0,
             max: 12000,
-            divisions: 120,
+            divisions: 2400,
             valueFormatter: (v) => '${v.round()} Hz',
-            onChanged: (v) => state.dsXHigh = v.round(),
+            onChanged: (v) =>
+                state.update((s) => s.dynamicSystem.xHigh = v.round()),
           ),
           LabeledSlider(
             label: l.yLowFreq,
-            value: state.dsYLow.toDouble(),
+            value: state.active.dynamicSystem.yLow.toDouble(),
             min: 0,
             max: 200,
             divisions: 200,
             valueFormatter: (v) => '${v.round()} Hz',
-            onChanged: (v) => state.dsYLow = v.round(),
+            onChanged: (v) =>
+                state.update((s) => s.dynamicSystem.yLow = v.round()),
           ),
           LabeledSlider(
             label: l.yHighFreq,
-            value: state.dsYHigh.toDouble(),
+            value: state.active.dynamicSystem.yHigh.toDouble(),
             min: 0,
             max: 300,
-            divisions: 300,
+            divisions: 60,
             valueFormatter: (v) => '${v.round()} Hz',
-            onChanged: (v) => state.dsYHigh = v.round(),
+            onChanged: (v) =>
+                state.update((s) => s.dynamicSystem.yHigh = v.round()),
           ),
           LabeledSlider(
             label: l.sideGainLow,
-            value: state.dsSideGainLow.toDouble(),
+            value: state.active.dynamicSystem.sideGainLow.toDouble(),
             min: 0,
             max: 100,
             divisions: 100,
             valueFormatter: (v) => '${v.round()}%',
-            onChanged: (v) => state.dsSideGainLow = v.round(),
+            onChanged: (v) =>
+                state.update((s) => s.dynamicSystem.sideGainLow = v.round()),
           ),
           LabeledSlider(
             label: l.sideGainHigh,
-            value: state.dsSideGainHigh.toDouble(),
+            value: state.active.dynamicSystem.sideGainHigh.toDouble(),
             min: 0,
             max: 100,
             divisions: 100,
             valueFormatter: (v) => '${v.round()}%',
-            onChanged: (v) => state.dsSideGainHigh = v.round(),
+            onChanged: (v) =>
+                state.update((s) => s.dynamicSystem.sideGainHigh = v.round()),
           ),
         ],
       ),
@@ -209,130 +216,130 @@ class _DynamicsPageState extends State<DynamicsPage> {
     return EffectCard(
       title: l.fetCompressor,
       masterEnabled: state.masterEnabled,
-      enabled: state.fetCompressorEnabled,
-      onToggle: (v) => state.fetCompressorEnabled = v,
+      enabled: state.active.fet.enabled,
+      onToggle: (v) => state.update((s) => s.fet.enabled = v),
       child: Column(
         children: [
           const SizedBox(height: 8),
           LabeledSlider(
             label: l.threshold,
-            value: state.fetCompressorThreshold.toDouble(),
+            value: state.active.fet.threshold.toDouble(),
             min: -48,
             max: 0,
             divisions: 48,
             valueFormatter: (v) => '${v.round()} dB',
-            onChanged: (v) => state.fetCompressorThreshold = v.round(),
+            onChanged: (v) => state.update((s) => s.fet.threshold = v.round()),
           ),
           LabeledSlider(
             label: l.ratio,
-            value: state.fetCompressorRatio.toDouble(),
+            value: state.active.fet.ratio.toDouble(),
             min: 0,
             max: 200,
-            valueFormatter: (v) => (v / 100).toStringAsFixed(2),
-            onChanged: (v) => state.fetCompressorRatio = v.round(),
+            valueFormatter: (v) => (v / 100).toStringAsFixed(1),
+            onChanged: (v) => state.update((s) => s.fet.ratio = v.round()),
           ),
           _buildAutoToggle(
             l.autoKnee,
-            state.fetCompressorAutoKnee,
-            (v) => state.fetCompressorAutoKnee = v,
+            state.active.fet.autoKnee,
+            (v) => state.update((s) => s.fet.autoKnee = v),
           ),
           LabeledSlider(
             label: l.knee,
-            value: state.fetCompressorKnee.toDouble(),
+            value: state.active.fet.knee.toDouble(),
             min: 0,
             max: 12,
             divisions: 12,
             valueFormatter: (v) => '${v.round()} dB',
-            enabled: !state.fetCompressorAutoKnee,
-            onChanged: (v) => state.fetCompressorKnee = v.round(),
+            enabled: !state.active.fet.autoKnee,
+            onChanged: (v) => state.update((s) => s.fet.knee = v.round()),
           ),
           LabeledSlider(
             label: l.kneeMulti,
-            value: state.fetCompressorKneeMulti.toDouble(),
+            value: state.active.fet.kneeMulti.toDouble(),
             min: 0,
             max: 400,
-            valueFormatter: (v) => '${(v / 100).toStringAsFixed(2)}x',
-            onChanged: (v) => state.fetCompressorKneeMulti = v.round(),
+            valueFormatter: (v) => '${(v / 100).toStringAsFixed(1)}x',
+            onChanged: (v) => state.update((s) => s.fet.kneeMulti = v.round()),
           ),
           _buildAutoToggle(
             l.autoGain,
-            state.fetCompressorAutoGain,
-            (v) => state.fetCompressorAutoGain = v,
+            state.active.fet.autoGain,
+            (v) => state.update((s) => s.fet.autoGain = v),
           ),
           LabeledSlider(
             label: l.gain,
-            value: state.fetCompressorGain.toDouble(),
+            value: state.active.fet.gain.toDouble(),
             min: 0,
             max: 24,
             divisions: 24,
             valueFormatter: (v) => '${v.round()} dB',
-            enabled: !state.fetCompressorAutoGain,
-            onChanged: (v) => state.fetCompressorGain = v.round(),
+            enabled: !state.active.fet.autoGain,
+            onChanged: (v) => state.update((s) => s.fet.gain = v.round()),
           ),
           _buildAutoToggle(
             l.autoAttack,
-            state.fetCompressorAutoAttack,
-            (v) => state.fetCompressorAutoAttack = v,
+            state.active.fet.autoAttack,
+            (v) => state.update((s) => s.fet.autoAttack = v),
           ),
           LabeledSlider(
             label: l.attack,
-            value: state.fetCompressorAttack.toDouble(),
+            value: state.active.fet.attack.toDouble(),
             min: 1,
             max: 100,
             valueFormatter: (v) => '${v.round()} ms',
-            enabled: !state.fetCompressorAutoAttack,
-            onChanged: (v) => state.fetCompressorAttack = v.round(),
+            enabled: !state.active.fet.autoAttack,
+            onChanged: (v) => state.update((s) => s.fet.attack = v.round()),
           ),
           LabeledSlider(
             label: l.maxAttack,
-            value: state.fetCompressorMaxAttack.toDouble(),
+            value: state.active.fet.maxAttack.toDouble(),
             min: 1,
             max: 100,
             valueFormatter: (v) => '${v.round()} ms',
-            onChanged: (v) => state.fetCompressorMaxAttack = v.round(),
+            onChanged: (v) => state.update((s) => s.fet.maxAttack = v.round()),
           ),
           _buildAutoToggle(
             l.autoRelease,
-            state.fetCompressorAutoRelease,
-            (v) => state.fetCompressorAutoRelease = v,
+            state.active.fet.autoRelease,
+            (v) => state.update((s) => s.fet.autoRelease = v),
           ),
           LabeledSlider(
             label: l.release,
-            value: state.fetCompressorRelease.toDouble(),
+            value: state.active.fet.release.toDouble(),
             min: 5,
             max: 500,
             valueFormatter: (v) => '${v.round()} ms',
-            enabled: !state.fetCompressorAutoRelease,
-            onChanged: (v) => state.fetCompressorRelease = v.round(),
+            enabled: !state.active.fet.autoRelease,
+            onChanged: (v) => state.update((s) => s.fet.release = v.round()),
           ),
           LabeledSlider(
             label: l.maxRelease,
-            value: state.fetCompressorMaxRelease.toDouble(),
+            value: state.active.fet.maxRelease.toDouble(),
             min: 5,
             max: 500,
             valueFormatter: (v) => '${v.round()} ms',
-            onChanged: (v) => state.fetCompressorMaxRelease = v.round(),
+            onChanged: (v) => state.update((s) => s.fet.maxRelease = v.round()),
           ),
           LabeledSlider(
             label: l.crest,
-            value: state.fetCompressorCrest.toDouble(),
+            value: state.active.fet.crest.toDouble(),
             min: 5,
             max: 300,
             valueFormatter: (v) => '${v.round()} ms',
-            onChanged: (v) => state.fetCompressorCrest = v.round(),
+            onChanged: (v) => state.update((s) => s.fet.crest = v.round()),
           ),
           LabeledSlider(
             label: l.adapt,
-            value: state.fetCompressorAdapt.toDouble(),
+            value: state.active.fet.adapt.toDouble(),
             min: 0,
             max: 200,
             valueFormatter: (v) => '${v.round()}%',
-            onChanged: (v) => state.fetCompressorAdapt = v.round(),
+            onChanged: (v) => state.update((s) => s.fet.adapt = v.round()),
           ),
           _buildAutoToggle(
             l.noClip,
-            state.fetCompressorNoClip,
-            (v) => state.fetCompressorNoClip = v,
+            state.active.fet.noClip,
+            (v) => state.update((s) => s.fet.noClip = v),
           ),
         ],
       ),
@@ -346,8 +353,8 @@ class _DynamicsPageState extends State<DynamicsPage> {
     return EffectCard(
       title: l.multibandCompressor,
       masterEnabled: state.masterEnabled,
-      enabled: state.mbcEnabled,
-      onToggle: (v) => state.mbcEnabled = v,
+      enabled: state.active.mbc.enabled,
+      onToggle: (v) => state.update((s) => s.mbc.enabled = v),
       child: Column(
         children: [
           const SizedBox(height: 8),
@@ -401,8 +408,12 @@ class _DynamicsPageState extends State<DynamicsPage> {
           const SizedBox(height: 4),
           Builder(
             builder: (_) {
-              final lowFreq = band == 0 ? 20 : state.mbcCrossovers[band - 1];
-              final highFreq = band < 4 ? state.mbcCrossovers[band] : 20000;
+              final lowFreq = band == 0
+                  ? 20
+                  : state.active.mbc.crossovers[band - 1];
+              final highFreq = band < 4
+                  ? state.active.mbc.crossovers[band]
+                  : 20000;
               return Text(
                 '$lowFreq - ${band < 4 ? "$highFreq" : "20000+"} Hz',
                 style: TextStyle(fontSize: 11, color: AppColors.subtitleText),
@@ -412,137 +423,150 @@ class _DynamicsPageState extends State<DynamicsPage> {
           const SizedBox(height: 8),
           _buildAutoToggle(
             l.bandEnabled,
-            state.mbcBandEnables[band],
-            (v) => state.setMbcBandEnable(band, v),
+            state.active.mbc.bandEnables[band],
+            (v) => state.update((s) => s.mbc.bandEnables[band] = v),
           ),
           LabeledSlider(
             label: l.threshold,
-            value: state.mbcThresholds[band].toDouble(),
+            value: state.active.mbc.thresholds[band].toDouble(),
             min: -48,
             max: 0,
             divisions: 48,
             valueFormatter: (v) => '${v.round()} dB',
-            onChanged: (v) => state.setMbcThreshold(band, v.round()),
+            onChanged: (v) =>
+                state.update((s) => s.mbc.thresholds[band] = v.round()),
           ),
           LabeledSlider(
             label: l.ratio,
-            value: state.mbcRatios[band].toDouble(),
+            value: state.active.mbc.ratios[band].toDouble(),
             min: 0,
             max: 200,
-            valueFormatter: (v) => (v / 100).toStringAsFixed(2),
-            onChanged: (v) => state.setMbcRatio(band, v.round()),
+            valueFormatter: (v) => (v / 100).toStringAsFixed(1),
+            onChanged: (v) =>
+                state.update((s) => s.mbc.ratios[band] = v.round()),
           ),
           _buildAutoToggle(
             l.autoKnee,
-            state.mbcAutoKnees[band],
-            (v) => state.setMbcAutoKnee(band, v),
+            state.active.mbc.autoKnees[band],
+            (v) => state.update((s) => s.mbc.autoKnees[band] = v),
           ),
           LabeledSlider(
             label: l.knee,
-            value: state.mbcKnees[band].toDouble(),
+            value: state.active.mbc.knees[band].toDouble(),
             min: 0,
             max: 12,
             divisions: 12,
             valueFormatter: (v) => '${v.round()} dB',
-            enabled: !state.mbcAutoKnees[band],
-            onChanged: (v) => state.setMbcKnee(band, v.round()),
+            enabled: !state.active.mbc.autoKnees[band],
+            onChanged: (v) =>
+                state.update((s) => s.mbc.knees[band] = v.round()),
           ),
           _buildAutoToggle(
             l.autoGain,
-            state.mbcAutoGains[band],
-            (v) => state.setMbcAutoGain(band, v),
+            state.active.mbc.autoGains[band],
+            (v) => state.update((s) => s.mbc.autoGains[band] = v),
           ),
           LabeledSlider(
             label: l.gain,
-            value: state.mbcGains[band].toDouble(),
+            value: state.active.mbc.gains[band].toDouble(),
             min: 0,
             max: 24,
             divisions: 24,
             valueFormatter: (v) => '${v.round()} dB',
-            enabled: !state.mbcAutoGains[band],
-            onChanged: (v) => state.setMbcGain(band, v.round()),
+            enabled: !state.active.mbc.autoGains[band],
+            onChanged: (v) =>
+                state.update((s) => s.mbc.gains[band] = v.round()),
           ),
           _buildAutoToggle(
             l.autoAttack,
-            state.mbcAutoAttacks[band],
-            (v) => state.setMbcAutoAttack(band, v),
+            state.active.mbc.autoAttacks[band],
+            (v) => state.update((s) => s.mbc.autoAttacks[band] = v),
           ),
           LabeledSlider(
             label: l.attack,
-            value: state.mbcAttacks[band].toDouble(),
+            value: state.active.mbc.attacks[band].toDouble(),
             min: 1,
             max: 100,
             valueFormatter: (v) => '${v.round()} ms',
-            enabled: !state.mbcAutoAttacks[band],
-            onChanged: (v) => state.setMbcAttack(band, v.round()),
+            enabled: !state.active.mbc.autoAttacks[band],
+            onChanged: (v) =>
+                state.update((s) => s.mbc.attacks[band] = v.round()),
           ),
           _buildAutoToggle(
             l.autoRelease,
-            state.mbcAutoReleases[band],
-            (v) => state.setMbcAutoRelease(band, v),
+            state.active.mbc.autoReleases[band],
+            (v) => state.update((s) => s.mbc.autoReleases[band] = v),
           ),
           LabeledSlider(
             label: l.release,
-            value: state.mbcReleases[band].toDouble(),
+            value: state.active.mbc.releases[band].toDouble(),
             min: 5,
             max: 500,
             valueFormatter: (v) => '${v.round()} ms',
-            enabled: !state.mbcAutoReleases[band],
-            onChanged: (v) => state.setMbcRelease(band, v.round()),
+            enabled: !state.active.mbc.autoReleases[band],
+            onChanged: (v) =>
+                state.update((s) => s.mbc.releases[band] = v.round()),
           ),
           LabeledSlider(
             label: l.kneeMulti,
-            value: state.mbcKneeMultis[band].toDouble(),
+            value: state.active.mbc.kneeMultis[band].toDouble(),
             min: 0,
             max: 400,
-            valueFormatter: (v) => '${(v / 100).toStringAsFixed(2)}x',
-            onChanged: (v) => state.setMbcKneeMulti(band, v.round()),
+            valueFormatter: (v) => '${(v / 100).toStringAsFixed(1)}x',
+            onChanged: (v) =>
+                state.update((s) => s.mbc.kneeMultis[band] = v.round()),
           ),
           LabeledSlider(
             label: l.maxAttack,
-            value: state.mbcMaxAttacks[band].toDouble(),
+            value: state.active.mbc.maxAttacks[band].toDouble(),
             min: 1,
             max: 100,
             valueFormatter: (v) => '${v.round()} ms',
-            onChanged: (v) => state.setMbcMaxAttack(band, v.round()),
+            onChanged: (v) =>
+                state.update((s) => s.mbc.maxAttacks[band] = v.round()),
           ),
           LabeledSlider(
             label: l.maxRelease,
-            value: state.mbcMaxReleases[band].toDouble(),
+            value: state.active.mbc.maxReleases[band].toDouble(),
             min: 5,
             max: 500,
             valueFormatter: (v) => '${v.round()} ms',
-            onChanged: (v) => state.setMbcMaxRelease(band, v.round()),
+            onChanged: (v) =>
+                state.update((s) => s.mbc.maxReleases[band] = v.round()),
           ),
           LabeledSlider(
             label: l.crest,
-            value: state.mbcCrests[band].toDouble(),
+            value: state.active.mbc.crests[band].toDouble(),
             min: 5,
             max: 300,
             valueFormatter: (v) => '${v.round()} ms',
-            onChanged: (v) => state.setMbcCrest(band, v.round()),
+            onChanged: (v) =>
+                state.update((s) => s.mbc.crests[band] = v.round()),
           ),
           LabeledSlider(
             label: l.adapt,
-            value: state.mbcAdapts[band].toDouble(),
+            value: state.active.mbc.adapts[band].toDouble(),
             min: 0,
             max: 200,
             valueFormatter: (v) => '${v.round()}%',
-            onChanged: (v) => state.setMbcAdapt(band, v.round()),
+            onChanged: (v) =>
+                state.update((s) => s.mbc.adapts[band] = v.round()),
           ),
           _buildAutoToggle(
             l.noClip,
-            state.mbcNoClips[band],
-            (v) => state.setMbcNoClip(band, v),
+            state.active.mbc.noClips[band],
+            (v) => state.update((s) => s.mbc.noClips[band] = v),
           ),
           if (band < 4)
             LabeledSlider(
               label: l.crossover,
-              value: state.mbcCrossovers[band].toDouble(),
+              value: state.active.mbc.crossovers[band].toDouble(),
               min: 20,
               max: 20000,
+              divisions: 3996,
               valueFormatter: (v) => '${v.round()} Hz',
-              onChanged: (v) => state.setMbcCrossover(band, v.round()),
+              onChanged: (v) =>
+                  state.update((s) => s.mbc.crossovers[band] = v.round()),
             ),
         ],
       ),
@@ -553,43 +577,39 @@ class _DynamicsPageState extends State<DynamicsPage> {
     return EffectCard(
       title: l.playbackGainControl,
       masterEnabled: state.masterEnabled,
-      enabled: state.playbackGainEnabled,
-      onToggle: (v) => state.playbackGainEnabled = v,
+      enabled: state.active.agc.enabled,
+      onToggle: (v) => state.update((s) => s.agc.enabled = v),
       child: Column(
         children: [
           const SizedBox(height: 8),
           LabeledSlider(
             label: l.strength,
-            value: state.playbackGainStrength.toDouble(),
-            min: 0,
-            max: 2,
-            divisions: 2,
-            onChanged: (v) => state.playbackGainStrength = v.round(),
+            value: state.active.agc.strength.toDouble(),
+            min: 50,
+            max: 300,
+            valueFormatter: (v) => '${(v / 100).toStringAsFixed(1)}x',
+            onChanged: (v) => state.update((s) => s.agc.strength = v.round()),
           ),
           LabeledSlider(
             label: l.maxGain,
-            value: state.playbackGainMaxGain.toDouble(),
-            min: 0,
-            max: 10,
-            divisions: 10,
-            onChanged: (v) => state.playbackGainMaxGain = v.round(),
+            value: state.active.agc.maxGain.toDouble(),
+            min: 100,
+            max: 1000,
+            valueFormatter: (v) => '${(v / 100).toStringAsFixed(1)}x',
+            onChanged: (v) => state.update((s) => s.agc.maxGain = v.round()),
           ),
           LabeledSlider(
             label: l.outputThreshold,
-            value: state.playbackGainOutputThreshold.toDouble(),
-            min: 0,
-            max: 5,
-            divisions: 5,
+            value: state.active.agc.outputThreshold.toDouble(),
+            min: 30,
+            max: 100,
             valueFormatter: (v) {
-              final idx = v.round();
-              final pct = ValueMappings.safeIndex(
-                ValueMappings.limiterValues,
-                idx,
-              );
+              final pct = v.round();
               final dB = pct > 0 ? 20.0 * log(pct / 100.0) / ln10 : -99.9;
               return '${dB.toStringAsFixed(1)}dB';
             },
-            onChanged: (v) => state.playbackGainOutputThreshold = v.round(),
+            onChanged: (v) =>
+                state.update((s) => s.agc.outputThreshold = v.round()),
           ),
         ],
       ),
@@ -600,51 +620,39 @@ class _DynamicsPageState extends State<DynamicsPage> {
     return EffectCard(
       title: l.lufsTargeting,
       masterEnabled: state.masterEnabled,
-      enabled: state.lufsEnabled,
-      onToggle: (v) => state.lufsEnabled = v,
+      enabled: state.active.lufs.enabled,
+      onToggle: (v) => state.update((s) => s.lufs.enabled = v),
       child: Column(
         children: [
           const SizedBox(height: 8),
           LabeledSlider(
             label: l.target,
-            value: state.lufsTarget.toDouble(),
+            value: state.active.lufs.target.toDouble(),
             min: 80,
             max: 240,
             valueFormatter: (v) => '${(v / -10.0).toStringAsFixed(1)} LUFS',
-            onChanged: (v) => state.lufsTarget = v.round(),
+            onChanged: (v) => state.update((s) => s.lufs.target = v.round()),
           ),
           LabeledSlider(
             label: l.maxGain,
-            value: state.lufsMaxGain.toDouble(),
+            value: state.active.lufs.maxGain.toDouble(),
             min: 0,
             max: 120,
             valueFormatter: (v) => '${(v / 10.0).toStringAsFixed(1)} dB',
-            onChanged: (v) => state.lufsMaxGain = v.round(),
+            onChanged: (v) => state.update((s) => s.lufs.maxGain = v.round()),
           ),
-          Row(
-            children: [
-              SizedBox(
-                width: 100,
-                child: Text(
-                  l.speed,
-                  style: TextStyle(fontSize: 12, color: AppColors.subtitleText),
-                ),
-              ),
-              Expanded(
-                child: ComboBox<int>(
-                  value: state.lufsSpeed,
-                  items: [
-                    ComboBoxItem(value: 0, child: Text(l.speedSlow)),
-                    ComboBoxItem(value: 1, child: Text(l.speedMedium)),
-                    ComboBoxItem(value: 2, child: Text(l.speedFast)),
-                  ],
-                  onChanged: (v) {
-                    if (v != null) state.lufsSpeed = v;
-                  },
-                  isExpanded: true,
-                ),
-              ),
-            ],
+          LabeledSlider(
+            label: l.speed,
+            value: state.active.lufs.speed.toDouble(),
+            min: 0,
+            max: 2,
+            divisions: 2,
+            valueFormatter: (v) => [
+              l.speedSlow,
+              l.speedMedium,
+              l.speedFast,
+            ][v.round().clamp(0, 2)],
+            onChanged: (v) => state.update((s) => s.lufs.speed = v.round()),
           ),
         ],
       ),
@@ -655,8 +663,8 @@ class _DynamicsPageState extends State<DynamicsPage> {
     return EffectCard(
       title: l.viperDdc,
       masterEnabled: state.masterEnabled,
-      enabled: state.ddcEnabled,
-      onToggle: (v) => state.ddcEnabled = v,
+      enabled: state.active.ddc.enabled,
+      onToggle: (v) => state.setDdcEnabled(v),
       child: Column(
         children: [
           const SizedBox(height: 8),
@@ -671,8 +679,8 @@ class _DynamicsPageState extends State<DynamicsPage> {
               ),
               Expanded(
                 child: ComboBox<String>(
-                  value: state.ddcFiles.contains(state.ddcFilePath)
-                      ? state.ddcFilePath
+                  value: state.ddcFiles.contains(state.active.ddc.device)
+                      ? state.active.ddc.device
                       : '',
                   items: [
                     ComboBoxItem<String>(value: '', child: Text(l.none)),
@@ -684,8 +692,8 @@ class _DynamicsPageState extends State<DynamicsPage> {
                   onChanged: (name) {
                     if (name == null) return;
                     if (name.isEmpty) {
-                      state.ddcFilePath = '';
-                      state.ddcEnabled = false;
+                      state.update((s) => s.ddc.device = '');
+                      state.setDdcEnabled(false);
                     } else {
                       state.loadDdcByName(name);
                     }
@@ -714,9 +722,9 @@ class _DynamicsPageState extends State<DynamicsPage> {
               ),
               const SizedBox(width: 8),
               Button(
-                onPressed: state.ddcFilePath.isEmpty
+                onPressed: state.active.ddc.device.isEmpty
                     ? null
-                    : () => state.deleteDdc(state.ddcFilePath),
+                    : () => state.deleteDdc(state.active.ddc.device),
                 child: Text(l.delete),
               ),
             ],
@@ -730,8 +738,8 @@ class _DynamicsPageState extends State<DynamicsPage> {
     return EffectCard(
       title: l.convolver,
       masterEnabled: state.masterEnabled,
-      enabled: state.convolutionEnabled,
-      onToggle: (v) => state.convolutionEnabled = v,
+      enabled: state.active.convolver.enabled,
+      onToggle: (v) => state.setConvolverEnabled(v),
       child: Column(
         children: [
           const SizedBox(height: 8),
@@ -746,8 +754,9 @@ class _DynamicsPageState extends State<DynamicsPage> {
               ),
               Expanded(
                 child: ComboBox<String>(
-                  value: state.kernelFiles.contains(state.convolutionKernelPath)
-                      ? state.convolutionKernelPath
+                  value:
+                      state.kernelFiles.contains(state.active.convolver.kernel)
+                      ? state.active.convolver.kernel
                       : '',
                   items: [
                     ComboBoxItem<String>(value: '', child: Text(l.none)),
@@ -759,8 +768,8 @@ class _DynamicsPageState extends State<DynamicsPage> {
                   onChanged: (name) {
                     if (name == null) return;
                     if (name.isEmpty) {
-                      state.convolutionKernelPath = '';
-                      state.convolutionEnabled = false;
+                      state.update((s) => s.convolver.kernel = '');
+                      state.setConvolverEnabled(false);
                     } else {
                       state.loadKernelByName(name);
                     }
@@ -773,12 +782,13 @@ class _DynamicsPageState extends State<DynamicsPage> {
           const SizedBox(height: 8),
           LabeledSlider(
             label: l.crossChannel,
-            value: state.convolutionCrossChannel.toDouble(),
+            value: state.active.convolver.crossChannel.toDouble(),
             min: 0,
             max: 100,
             divisions: 100,
             valueFormatter: (v) => '${v.round()}%',
-            onChanged: (v) => state.convolutionCrossChannel = v.round(),
+            onChanged: (v) =>
+                state.update((s) => s.convolver.crossChannel = v.round()),
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
@@ -798,9 +808,9 @@ class _DynamicsPageState extends State<DynamicsPage> {
               ),
               const SizedBox(width: 8),
               Button(
-                onPressed: state.convolutionKernelPath.isEmpty
+                onPressed: state.active.convolver.kernel.isEmpty
                     ? null
-                    : () => state.deleteKernel(state.convolutionKernelPath),
+                    : () => state.deleteKernel(state.active.convolver.kernel),
                 child: Text(l.delete),
               ),
             ],
@@ -811,7 +821,8 @@ class _DynamicsPageState extends State<DynamicsPage> {
   }
 
   Widget _buildSpeakerOptimization(ViperState state, S l) {
-    final active = state.speakerCorrectionEnabled && state.masterEnabled;
+    final active =
+        state.active.speakerCorrection.enabled && state.masterEnabled;
     return AnimatedOpacity(
       opacity: state.masterEnabled ? 1.0 : 0.5,
       duration: const Duration(milliseconds: 200),
@@ -842,9 +853,9 @@ class _DynamicsPageState extends State<DynamicsPage> {
               ),
             ),
             ToggleSwitch(
-              checked: state.speakerCorrectionEnabled,
+              checked: state.active.speakerCorrection.enabled,
               onChanged: state.masterEnabled
-                  ? (v) => state.speakerCorrectionEnabled = v
+                  ? (v) => state.update((s) => s.speakerCorrection.enabled = v)
                   : null,
             ),
           ],

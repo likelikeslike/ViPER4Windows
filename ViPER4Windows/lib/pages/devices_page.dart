@@ -175,7 +175,7 @@ class _DevicesPageState extends State<DevicesPage> {
             children: [
               _infoRow(
                 l.deviceLabelType,
-                isHeadphone ? l.deviceTypeHeadphone : l.deviceTypeSpeaker,
+                isHeadphone ? l.headphone : l.speaker,
               ),
               _infoRow(l.deviceLabelId, deviceId),
               _infoRow(
@@ -187,13 +187,13 @@ class _DevicesPageState extends State<DevicesPage> {
                 children: [
                   _actionButton(
                     icon: FluentIcons.download,
-                    label: l.deviceActionLoad,
+                    label: l.load,
                     onPressed: () {
                       state.loadDevicePreset(deviceId);
                       displayInfoBar(
                         context,
                         builder: (ctx, close) => InfoBar(
-                          title: Text('${l.deviceActionLoad}: $deviceName'),
+                          title: Text('${l.load}: $deviceName'),
                           severity: InfoBarSeverity.success,
                           action: IconButton(
                             icon: const Icon(FluentIcons.clear),
@@ -206,13 +206,13 @@ class _DevicesPageState extends State<DevicesPage> {
                   const SizedBox(width: 16),
                   _actionButton(
                     icon: FluentIcons.sync,
-                    label: l.deviceActionUpdate,
+                    label: l.update,
                     onPressed: () {
                       state.saveDevicePreset(deviceId);
                       displayInfoBar(
                         context,
                         builder: (ctx, close) => InfoBar(
-                          title: Text('${l.deviceActionUpdate}: $deviceName'),
+                          title: Text('${l.update}: $deviceName'),
                           severity: InfoBarSeverity.success,
                           action: IconButton(
                             icon: const Icon(FluentIcons.clear),
@@ -232,7 +232,7 @@ class _DevicesPageState extends State<DevicesPage> {
                   const SizedBox(width: 16),
                   _actionButton(
                     icon: FluentIcons.delete,
-                    label: l.deviceActionDelete,
+                    label: l.delete,
                     onPressed: (isActive || isBuiltIn)
                         ? null
                         : () {

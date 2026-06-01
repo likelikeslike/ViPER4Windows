@@ -32,29 +32,29 @@ class _EqualizerPageState extends State<EqualizerPage> {
   }
 
   void _applyPreset(ViperState state, int presetIndex) {
-    final presets = EqPresets.presetsForCount(state.equalizerBandCount);
+    final presets = EqPresets.presetsForCount(state.active.eq.bandCount);
     final bands = List<double>.from(presets[presetIndex]);
-    state.equalizerBands = bands;
+    state.update((s) => s.eq.bands = bands);
     for (var i = 0; i < bands.length; i++) {
       state.sendEQBand(i, bands[i]);
     }
-    state.equalizerBandsMap[state.equalizerBandCount] = bands;
+    state.active.eq.bandsMap[state.active.eq.bandCount] = bands;
     setState(() => _selectedPreset = presetIndex);
   }
 
   void _resetBands(ViperState state) {
-    final count = state.equalizerBandCount;
+    final count = state.active.eq.bandCount;
     final bands = List<double>.filled(count, 0.0);
-    state.equalizerBands = bands;
+    state.update((s) => s.eq.bands = bands);
     for (var i = 0; i < count; i++) {
       state.sendEQBand(i, 0.0);
     }
-    state.equalizerBandsMap[count] = bands;
+    state.active.eq.bandsMap[count] = bands;
     setState(() => _selectedPreset = 5);
   }
 
   void _adjustBand(ViperState state, int index, double delta) {
-    final current = state.equalizerBands[index];
+    final current = state.active.eq.bands[index];
     final next = double.parse(
       (current + delta).clamp(-12.0, 12.0).toStringAsFixed(1),
     );
@@ -66,7 +66,7 @@ class _EqualizerPageState extends State<EqualizerPage> {
   Widget build(BuildContext context) {
     final state = context.watch<ViperState>();
     final l = S.of(context)!;
-    final bandCount = state.equalizerBandCount;
+    final bandCount = state.active.eq.bandCount;
     final labels = EqLabels.fullLabels(bandCount);
 
     return ScaffoldPage.scrollable(
@@ -84,8 +84,8 @@ class _EqualizerPageState extends State<EqualizerPage> {
         EffectCard(
           title: l.firEqualizer,
           masterEnabled: state.masterEnabled,
-          enabled: state.equalizerEnabled,
-          onToggle: (v) => state.equalizerEnabled = v,
+          enabled: state.active.eq.enabled,
+          onToggle: (v) => state.update((s) => s.eq.enabled = v),
           child: _buildContent(state, bandCount, labels, l),
         ),
         _buildDynEq(state, l),
@@ -189,11 +189,11 @@ class _EqualizerPageState extends State<EqualizerPage> {
           style: TextStyle(fontSize: 12, color: AppColors.enabledText),
         ),
       ),
-      ...List.generate(EqPresets.names.length, (i) {
+      ...List.generate(EqPresets.builtins.length, (i) {
         return ComboBoxItem<int>(
           value: i,
           child: Text(
-            EqPresets.names[i],
+            EqPresets.builtins[i].nameOf(l),
             style: TextStyle(fontSize: 12, color: AppColors.enabledText),
           ),
         );
@@ -270,8 +270,8 @@ class _EqualizerPageState extends State<EqualizerPage> {
 
     if (!needsScroll) {
       final bandWidgets = List.generate(bandCount, (i) {
-        final value = i < state.equalizerBands.length
-            ? state.equalizerBands[i]
+        final value = i < state.active.eq.bands.length
+            ? state.active.eq.bands[i]
             : 0.0;
         final label = i < labels.length ? labels[i] : '${i + 1}';
         return _buildBandColumn(state, i, value, label);
@@ -289,8 +289,8 @@ class _EqualizerPageState extends State<EqualizerPage> {
       builder: (context, constraints) {
         final bandWidth = constraints.maxWidth / 15;
         final bandWidgets = List.generate(bandCount, (i) {
-          final value = i < state.equalizerBands.length
-              ? state.equalizerBands[i]
+          final value = i < state.active.eq.bands.length
+              ? state.active.eq.bands[i]
               : 0.0;
           final label = i < labels.length ? labels[i] : '${i + 1}';
           return SizedBox(
@@ -447,14 +447,10 @@ class _EqualizerPageState extends State<EqualizerPage> {
     );
   }
 
-  String _dynEqFreqLabel(int freq) {
-    if (freq < 1000) return '${freq}Hz';
-    if (freq % 1000 == 0) return '${freq ~/ 1000}kHz';
-    return '${(freq / 1000).toStringAsFixed(1)}kHz';
-  }
+  String _dynEqFreqLabel(int freq) => '$freq Hz';
 
   Widget _buildDynEq(ViperState state, S l) {
-    final bandCount = state.dynEqBandCount;
+    final bandCount = state.active.dynamicEq.bandCount;
     final int band = _dynEqSelectedBand.clamp(0, max(0, bandCount - 1));
     if (band != _dynEqSelectedBand) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -465,8 +461,8 @@ class _EqualizerPageState extends State<EqualizerPage> {
     return EffectCard(
       title: l.dynamicEq,
       masterEnabled: state.masterEnabled,
-      enabled: state.dynEqEnabled,
-      onToggle: (v) => state.dynEqEnabled = v,
+      enabled: state.active.dynamicEq.enabled,
+      onToggle: (v) => state.update((s) => s.dynamicEq.enabled = v),
       child: Column(
         children: [
           const SizedBox(height: 8),
@@ -522,7 +518,7 @@ class _EqualizerPageState extends State<EqualizerPage> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            _dynEqFreqLabel(state.dynEqFreqs[i]),
+                            _dynEqFreqLabel(state.active.dynamicEq.freqs[i]),
                             style: const TextStyle(fontSize: 11),
                           ),
                           if (bandCount > 1) ...[
@@ -544,7 +540,9 @@ class _EqualizerPageState extends State<EqualizerPage> {
                     ),
                   );
                 }),
-                if (bandCount < 8)
+                if (bandCount < 8 &&
+                    (bandCount == 0 ||
+                        state.active.dynamicEq.freqs[bandCount - 1] < 20000))
                   Padding(
                     padding: const EdgeInsets.only(right: 4),
                     child: IconButton(
@@ -552,7 +550,8 @@ class _EqualizerPageState extends State<EqualizerPage> {
                       onPressed: () {
                         state.addDynEqBand();
                         setState(
-                          () => _dynEqSelectedBand = state.dynEqBandCount - 1,
+                          () => _dynEqSelectedBand =
+                              state.active.dynamicEq.bandCount - 1,
                         );
                       },
                     ),
@@ -562,54 +561,73 @@ class _EqualizerPageState extends State<EqualizerPage> {
           ),
           const SizedBox(height: 8),
           if (bandCount > 0) ...[
-            LabeledSlider(
-              label: l.frequency,
-              value: state.dynEqFreqs[band].toDouble(),
-              min: 20,
-              max: 20000,
-              valueFormatter: (v) => _dynEqFreqLabel(v.round()),
-              onChanged: (v) =>
-                  state.setDynEqFreq(band, ((v.round() + 2) ~/ 5) * 5),
+            Builder(
+              builder: (_) {
+                final minFreq = band > 0
+                    ? state.active.dynamicEq.freqs[band - 1] + 5
+                    : 20;
+                final maxFreq = band < bandCount - 1
+                    ? state.active.dynamicEq.freqs[band + 1] - 5
+                    : 20000;
+                return LabeledSlider(
+                  label: l.frequency,
+                  value: state.active.dynamicEq.freqs[band].toDouble().clamp(
+                    minFreq.toDouble(),
+                    maxFreq.toDouble(),
+                  ),
+                  min: minFreq.toDouble(),
+                  max: maxFreq.toDouble(),
+                  divisions: ((maxFreq - minFreq) / 5).round().clamp(1, 100000),
+                  valueFormatter: (v) => _dynEqFreqLabel(v.round()),
+                  onChanged: (v) =>
+                      state.update((s) => s.dynamicEq.freqs[band] = v.round()),
+                );
+              },
             ),
             LabeledSlider(
               label: l.quality,
-              value: state.dynEqQs[band].toDouble(),
+              value: state.active.dynamicEq.qs[band].toDouble(),
               min: 50,
               max: 800,
               valueFormatter: (v) => (v / 100).toStringAsFixed(1),
-              onChanged: (v) => state.setDynEqQ(band, v.round()),
+              onChanged: (v) =>
+                  state.update((s) => s.dynamicEq.qs[band] = v.round()),
             ),
             LabeledSlider(
               label: l.targetGain,
-              value: state.dynEqGains[band].toDouble(),
+              value: state.active.dynamicEq.gains[band].toDouble(),
               min: -120,
               max: 120,
               valueFormatter: (v) => '${(v / 10).toStringAsFixed(1)} dB',
-              onChanged: (v) => state.setDynEqGain(band, v.round()),
+              onChanged: (v) =>
+                  state.update((s) => s.dynamicEq.gains[band] = v.round()),
             ),
             LabeledSlider(
               label: l.threshold,
-              value: state.dynEqThresholds[band].toDouble(),
-              min: -1000,
+              value: state.active.dynamicEq.thresholds[band].toDouble(),
+              min: -800,
               max: 0,
-              valueFormatter: (v) => '${(v / 10).toStringAsFixed(1)} dB',
-              onChanged: (v) => state.setDynEqThreshold(band, v.round()),
+              valueFormatter: (v) => '${(v ~/ 10)} dB',
+              onChanged: (v) =>
+                  state.update((s) => s.dynamicEq.thresholds[band] = v.round()),
             ),
             LabeledSlider(
               label: l.attack,
-              value: state.dynEqAttacks[band].toDouble(),
+              value: state.active.dynamicEq.attacks[band].toDouble(),
               min: 1,
               max: 100,
               valueFormatter: (v) => '${v.round()} ms',
-              onChanged: (v) => state.setDynEqAttack(band, v.round()),
+              onChanged: (v) =>
+                  state.update((s) => s.dynamicEq.attacks[band] = v.round()),
             ),
             LabeledSlider(
               label: l.release,
-              value: state.dynEqReleases[band].toDouble(),
+              value: state.active.dynamicEq.releases[band].toDouble(),
               min: 10,
               max: 500,
               valueFormatter: (v) => '${v.round()} ms',
-              onChanged: (v) => state.setDynEqRelease(band, v.round()),
+              onChanged: (v) =>
+                  state.update((s) => s.dynamicEq.releases[band] = v.round()),
             ),
             Row(
               children: [
@@ -625,14 +643,15 @@ class _EqualizerPageState extends State<EqualizerPage> {
                 ),
                 Expanded(
                   child: ComboBox<int>(
-                    value: state.dynEqFilterTypes[band],
+                    value: state.active.dynamicEq.filterTypes[band],
                     items: [
                       ComboBoxItem(value: 0, child: Text(l.peak)),
                       ComboBoxItem(value: 1, child: Text(l.lowShelf)),
                       ComboBoxItem(value: 2, child: Text(l.highShelf)),
                     ],
                     onChanged: (v) {
-                      if (v != null) state.setDynEqFilterType(band, v);
+                      if (v != null)
+                        state.update((s) => s.dynamicEq.filterTypes[band] = v);
                     },
                     isExpanded: true,
                   ),
@@ -665,8 +684,11 @@ class _EqualizerPageState extends State<EqualizerPage> {
               onPressed: () {
                 state.removeDynEqBand(band);
                 setState(() {
-                  if (_dynEqSelectedBand >= state.dynEqBandCount) {
-                    _dynEqSelectedBand = max(0, state.dynEqBandCount - 1);
+                  if (_dynEqSelectedBand >= state.active.dynamicEq.bandCount) {
+                    _dynEqSelectedBand = max(
+                      0,
+                      state.active.dynamicEq.bandCount - 1,
+                    );
                   }
                 });
                 Navigator.pop(ctx);

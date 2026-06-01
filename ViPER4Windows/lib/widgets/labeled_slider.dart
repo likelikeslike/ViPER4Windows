@@ -62,10 +62,13 @@ class LabeledSlider extends StatelessWidget {
             ),
           ),
           SizedBox(
-            width: 56,
+            width: 72,
             child: Text(
               displayValue,
               textAlign: TextAlign.right,
+              softWrap: false,
+              overflow: TextOverflow.visible,
+              maxLines: 1,
               style: TextStyle(
                 fontSize: 12,
                 fontFamily: 'Inter',
