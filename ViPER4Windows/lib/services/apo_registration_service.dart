@@ -62,15 +62,15 @@ foreach ($ep in Get-ChildItem $renderPath) {
     $registered = $false
     if (Test-Path $fxPath) {
         $fxProps = Get-ItemProperty $fxPath -ErrorAction SilentlyContinue
-        $sfxOld = $fxProps.'{d04e05a6-594b-4fb6-a80d-01af5eed7d1d},5'
-        $mfxOld = $fxProps.'{d04e05a6-594b-4fb6-a80d-01af5eed7d1d},14'
-        $sfxNew = $fxProps.'{d3993a3f-99c2-4402-b5ec-a92a0367664b},6'
-        $mfxNew = $fxProps.'{d3993a3f-99c2-4402-b5ec-a92a0367664b},7'
-        if ($sfxOld -eq $viperClsid -or $mfxOld -eq $viperClsid) { $registered = $true }
-        if ($sfxNew -is [array] -and $sfxNew -contains $viperClsid) { $registered = $true }
-        if ($sfxNew -eq $viperClsid) { $registered = $true }
-        if ($mfxNew -is [array] -and $mfxNew -contains $viperClsid) { $registered = $true }
-        if ($mfxNew -eq $viperClsid) { $registered = $true }
+        $sfx = $fxProps.'{d04e05a6-594b-4fb6-a80d-01af5eed7d1d},5'
+        $mfx = $fxProps.'{d04e05a6-594b-4fb6-a80d-01af5eed7d1d},6'
+        $compSfx = $fxProps.'{d04e05a6-594b-4fb6-a80d-01af5eed7d1d},13'
+        $compMfx = $fxProps.'{d04e05a6-594b-4fb6-a80d-01af5eed7d1d},14'
+        if ($sfx -eq $viperClsid -or $mfx -eq $viperClsid) { $registered = $true }
+        if ($compSfx -is [array] -and $compSfx -contains $viperClsid) { $registered = $true }
+        elseif ($compSfx -eq $viperClsid) { $registered = $true }
+        if ($compMfx -is [array] -and $compMfx -contains $viperClsid) { $registered = $true }
+        elseif ($compMfx -eq $viperClsid) { $registered = $true }
     }
     $results += @{ id = $ep.PSChildName; name = $name; registered = $registered }
 }
