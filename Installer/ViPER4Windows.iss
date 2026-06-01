@@ -218,8 +218,72 @@ begin
     RegisterAPODriver();
 end;
 
+procedure RemoveAutostartShortcut();
+var
+  StartupVbs: String;
+begin
+  StartupVbs := ExpandConstant('{userappdata}\Microsoft\Windows\Start Menu\Programs\Startup\ViPER4Windows.vbs');
+  if FileExists(StartupVbs) then
+    DeleteFile(StartupVbs);
+end;
+
+procedure RemoveUserData();
+var
+  UserDir, ProgramDataDir: String;
+begin
+  UserDir := ExpandConstant('{userappdata}\ViPER4Windows');
+  ProgramDataDir := ExpandConstant('{commonappdata}\ViPER4Windows');
+  if DirExists(UserDir) then
+    DelTree(UserDir, True, True, True);
+  if DirExists(ProgramDataDir) then
+    DelTree(ProgramDataDir, True, True, True);
+end;
+
+var
+  RemoveUserDataChosen: Boolean;
+
+function InitializeUninstall(): Boolean;
+var
+  Response: Integer;
+  Labels: TArrayOfString;
+begin
+  SetArrayLength(Labels, 3);
+  Labels[0] := 'Remove ViPER4Windows' + #13#10 +
+               'Keep my settings, presets, profiles, and logs.';
+  Labels[1] := 'Remove ViPER4Windows and my data' + #13#10 +
+               'Also delete settings, presets, profiles, and logs.';
+  Labels[2] := 'Cancel';
+  Response := TaskDialogMsgBox(
+    'Uninstall ViPER4Windows',
+    'The audio driver registration and the autostart shortcut will be ' +
+    'cleaned up automatically. Choose whether to also remove your saved ' +
+    'settings, presets, profiles, and logs.',
+    mbConfirmation,
+    MB_YESNOCANCEL,
+    Labels,
+    0);
+  case Response of
+    IDYES:
+      begin
+        RemoveUserDataChosen := False;
+        Result := True;
+      end;
+    IDNO:
+      begin
+        RemoveUserDataChosen := True;
+        Result := True;
+      end;
+  else
+    Result := False;
+  end;
+end;
+
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 begin
-  if CurUninstallStep = usPostUninstall then
+  if CurUninstallStep = usPostUninstall then begin
     UnregisterAPODriver();
+    RemoveAutostartShortcut();
+    if RemoveUserDataChosen then
+      RemoveUserData();
+  end;
 end;
