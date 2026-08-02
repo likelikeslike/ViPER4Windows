@@ -65,28 +65,30 @@ typedef _CreateEventWDart =
 typedef _SetEvent = Int32 Function(IntPtr hEvent);
 typedef _SetEventDart = int Function(int hEvent);
 
-typedef _WaitForSingleObject =
-    Uint32 Function(IntPtr hHandle, Uint32 dwMilliseconds);
-typedef _WaitForSingleObjectDart =
-    int Function(int hHandle, int dwMilliseconds);
-
 const _invalidHandle = -1;
 const _pageReadWrite = 0x04;
-const _fileMapReadWrite = 0x0006; // FILE_MAP_READ | FILE_MAP_WRITE
-const _bulkShmSize = 65536;
+const _fileMapReadWrite = 0x0006;
+const _bulkShmSize = 4 * 1024 * 1024;
 const _headerSize = 32;
 
-const bulkCmdDdc = 1;
-const bulkCmdConvolverPrepare = 2;
-const bulkCmdConvolverChunk = 3;
-const bulkCmdConvolverCommit = 4;
+const _bulkDdcBase = 0;
+const _bulkDdcRegionSize = 2 * 1024 * 1024;
+const _bulkConvolverBase = _bulkDdcRegionSize;
+const _bulkConvolverRegionSize = 2 * 1024 * 1024;
+
+const _bulkSeqOffset = 8;
+
+const _v4wMagic = 0x57344D53;
+const _v4wFormatVersion = 2;
+
+const _bulkCmdDdc = 1;
+const _bulkCmdConvolverKernel = 2;
 
 final _log = AppLogger('BulkData');
 
 class BulkDataService {
   static const _shmName = r'Global\ViPER4Windows_BulkData';
   static const _eventName = r'Global\ViPER4Windows_BulkDataReady';
-  static const _ackEventName = r'Global\ViPER4Windows_BulkDataAck';
 
   late final DynamicLibrary _kernel32;
   late final _CreateFileMappingWDart _createFileMapping;
@@ -95,12 +97,12 @@ class BulkDataService {
   late final _CloseHandleDart _closeHandle;
   late final _CreateEventWDart _createEvent;
   late final _SetEventDart _setEvent;
-  late final _WaitForSingleObjectDart _waitForSingleObject;
 
   int _hMap = 0;
   Pointer? _pView;
   int _hBulkEvent = 0;
-  int _hAckEvent = 0;
+  int _ddcSeq = 0;
+  int _convolverSeq = 0;
   Pointer? _pSD;
 
   BulkDataService() {
@@ -122,10 +124,6 @@ class BulkDataService {
       'CreateEventW',
     );
     _setEvent = _kernel32.lookupFunction<_SetEvent, _SetEventDart>('SetEvent');
-    _waitForSingleObject = _kernel32
-        .lookupFunction<_WaitForSingleObject, _WaitForSingleObjectDart>(
-          'WaitForSingleObject',
-        );
   }
 
   void open() {
@@ -163,68 +161,53 @@ class BulkDataService {
     _hBulkEvent = _createEvent(saPtr, 0, 0, eventNamePtr);
     calloc.free(eventNamePtr);
 
-    final ackNamePtr = _ackEventName.toNativeUtf16();
-    _hAckEvent = _createEvent(saPtr, 0, 0, ackNamePtr);
-    calloc.free(ackNamePtr);
-
     freeSecurityAttributes(sa, _pSD);
-    _log.info('Opened: $_shmName');
+    _log.info('Opened: $_shmName (${_bulkShmSize ~/ (1024 * 1024)} MB)');
   }
 
-  bool sendCommand(
+  bool _sendBulk(
+    int base,
+    int regionSize,
+    int nextSeq,
     int command,
-    int param,
-    Uint8List data, {
+    Uint8List payload, {
     int arg1 = 0,
     int arg2 = 0,
     int arg3 = 0,
-    int arg4 = 0,
   }) {
     if (_pView == null || _pView == nullptr) return false;
-    if (data.length > _bulkShmSize - _headerSize) return false;
+    final maxPayload = regionSize - _headerSize;
+    if (payload.length > maxPayload) {
+      _log.warning('payload ${payload.length} > max $maxPayload');
+      return false;
+    }
 
     final dst = _pView!.cast<Uint8>();
     final header = ByteData(_headerSize);
-    header.setUint32(0, command, Endian.little);
-    header.setUint32(4, param, Endian.little);
-    header.setUint32(8, data.length, Endian.little);
-    header.setUint32(12, arg1, Endian.little);
-    header.setUint32(16, arg2, Endian.little);
-    header.setUint32(20, arg3, Endian.little);
-    header.setUint32(24, arg4, Endian.little);
-    header.setUint32(28, 0, Endian.little);
+    header.setUint32(0, _v4wMagic, Endian.little);
+    header.setUint32(4, _v4wFormatVersion, Endian.little);
+    header.setUint32(12, command, Endian.little);
+    header.setUint32(16, payload.length, Endian.little);
+    header.setUint32(20, arg1, Endian.little);
+    header.setUint32(24, arg2, Endian.little);
+    header.setUint32(28, arg3, Endian.little);
 
     final headerBytes = header.buffer.asUint8List();
     for (var i = 0; i < _headerSize; i++) {
-      dst[i] = headerBytes[i];
+      dst[base + i] = headerBytes[i];
     }
-    for (var i = 0; i < data.length; i++) {
-      dst[_headerSize + i] = data[i];
+    for (var i = 0; i < payload.length; i++) {
+      dst[base + _headerSize + i] = payload[i];
+    }
+
+    final seqBytes = ByteData(4)..setUint32(0, nextSeq, Endian.little);
+    final seqList = seqBytes.buffer.asUint8List();
+    for (var i = 0; i < 4; i++) {
+      dst[base + _bulkSeqOffset + i] = seqList[i];
     }
 
     if (_hBulkEvent != 0) _setEvent(_hBulkEvent);
-    if (_hAckEvent != 0) {
-      return _waitForSingleObject(_hAckEvent, 2000) == 0;
-    }
-    return false;
-  }
-
-  bool sendCommandNoData(
-    int command, {
-    int arg1 = 0,
-    int arg2 = 0,
-    int arg3 = 0,
-    int arg4 = 0,
-  }) {
-    return sendCommand(
-      command,
-      0,
-      Uint8List(0),
-      arg1: arg1,
-      arg2: arg2,
-      arg3: arg3,
-      arg4: arg4,
-    );
+    return true;
   }
 
   void loadDdcFile(Uint8List fileContent) {
@@ -256,33 +239,30 @@ class BulkDataService {
       return;
     }
 
-    final arrSize = coeffs44100.length;
-    final naturalSize = 4 + arrSize * 4 * 2;
-    int wireSize;
-    if (naturalSize <= 256) {
-      wireSize = 256;
-    } else if (naturalSize <= 1024) {
-      wireSize = 1024;
-    } else {
-      _log.warning('DDC data too large: $naturalSize bytes');
-      return;
-    }
+    final sectionCount = coeffs44100.length ~/ 5;
+    final byteCount = sectionCount * 5 * 4 * 2;
+    final payload = Uint8List(byteCount);
+    final pd = ByteData.sublistView(payload);
 
-    final buffer = Uint8List(wireSize);
-    final bd = ByteData.sublistView(buffer);
-    bd.setUint32(0, arrSize, Endian.little);
-    var offset = 4;
+    var offset = 0;
     for (final f in coeffs44100) {
-      bd.setFloat32(offset, f, Endian.little);
+      pd.setFloat32(offset, f, Endian.little);
       offset += 4;
     }
     for (final f in coeffs48000) {
-      bd.setFloat32(offset, f, Endian.little);
+      pd.setFloat32(offset, f, Endian.little);
       offset += 4;
     }
 
-    sendCommand(bulkCmdDdc, 65547, buffer);
-    _log.info('DDC sent: $arrSize coefficients');
+    final ok = _sendBulk(
+      _bulkDdcBase,
+      _bulkDdcRegionSize,
+      ++_ddcSeq,
+      _bulkCmdDdc,
+      payload,
+      arg1: sectionCount,
+    );
+    _log.info('DDC sent: $sectionCount sections (${ok ? "ok" : "failed"})');
   }
 
   void loadConvolverKernel(Uint8List wavData, String fileName) {
@@ -296,53 +276,41 @@ class BulkDataService {
       _log.warning('Convolver empty WAV: $fileName');
       return;
     }
-
-    final totalFloats = floats.length;
-    sendCommandNoData(
-      bulkCmdConvolverPrepare,
-      arg1: totalFloats,
-      arg2: channelCount,
-    );
-
-    final floatBytes = ByteData(totalFloats * 4);
-    for (var i = 0; i < totalFloats; i++) {
-      floatBytes.setFloat32(i * 4, floats[i], Endian.little);
+    if (channelCount < 1 || channelCount > 2) {
+      _log.warning('Convolver unsupported channel count: $channelCount');
+      return;
     }
-    final floatByteList = floatBytes.buffer.asUint8List();
-    final crcValue = _crc32(floatByteList);
 
-    const maxFloatsPerChunk = 2046;
-    var floatOffset = 0;
-    var chunkIndex = 0;
-    while (floatOffset < totalFloats) {
-      final remaining = totalFloats - floatOffset;
-      final floatsInChunk = remaining < maxFloatsPerChunk
-          ? remaining
-          : maxFloatsPerChunk;
-      final chunkByteCount = floatsInChunk * 4;
+    final frameCount = floats.length ~/ channelCount;
+    final payloadBytes = frameCount * channelCount * 4;
+    const maxPayload = _bulkConvolverRegionSize - _headerSize;
+    if (payloadBytes > maxPayload) {
+      _log.warning(
+        'Convolver kernel too large: $payloadBytes bytes > $maxPayload',
+      );
+      return;
+    }
 
-      final chunkBuffer = Uint8List(8192);
-      final cbd = ByteData.sublistView(chunkBuffer);
-      cbd.setUint32(0, chunkIndex, Endian.little);
-      cbd.setUint32(4, floatsInChunk, Endian.little);
-      for (var i = 0; i < chunkByteCount; i++) {
-        chunkBuffer[8 + i] = floatByteList[floatOffset * 4 + i];
-      }
-
-      sendCommand(bulkCmdConvolverChunk, 65541, chunkBuffer);
-      floatOffset += floatsInChunk;
-      chunkIndex++;
+    final payload = Uint8List(payloadBytes);
+    final pd = ByteData.sublistView(payload);
+    for (var i = 0; i < floats.length; i++) {
+      pd.setFloat32(i * 4, floats[i], Endian.little);
     }
 
     final kernelId = _stableHash(fileName) & 0x7FFFFFFF;
-    sendCommandNoData(
-      bulkCmdConvolverCommit,
-      arg1: totalFloats,
-      arg2: crcValue,
+    final ok = _sendBulk(
+      _bulkConvolverBase,
+      _bulkConvolverRegionSize,
+      ++_convolverSeq,
+      _bulkCmdConvolverKernel,
+      payload,
+      arg1: frameCount,
+      arg2: channelCount,
       arg3: kernelId,
     );
     _log.info(
-      'Convolver sent: $fileName ($totalFloats floats, $chunkIndex chunks)',
+      'Convolver sent: $fileName (frames=$frameCount ch=$channelCount '
+      'id=$kernelId ${ok ? "ok" : "failed"})',
     );
   }
 
@@ -419,17 +387,6 @@ class BulkDataService {
     return null;
   }
 
-  int _crc32(Uint8List data) {
-    var crc = 0xFFFFFFFF;
-    for (final b in data) {
-      crc ^= b;
-      for (var i = 0; i < 8; i++) {
-        crc = (crc >> 1) ^ ((crc & 1) != 0 ? 0xEDB88320 : 0);
-      }
-    }
-    return (crc ^ 0xFFFFFFFF) & 0xFFFFFFFF;
-  }
-
   int _stableHash(String str) {
     var hash = 2166136261;
     for (var i = 0; i < str.length; i++) {
@@ -451,10 +408,6 @@ class BulkDataService {
     if (_hBulkEvent != 0) {
       _closeHandle(_hBulkEvent);
       _hBulkEvent = 0;
-    }
-    if (_hAckEvent != 0) {
-      _closeHandle(_hAckEvent);
-      _hAckEvent = 0;
     }
     _log.info('Closed');
   }

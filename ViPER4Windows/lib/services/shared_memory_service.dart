@@ -2,7 +2,7 @@ import 'dart:ffi';
 import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
-import 'package:viper4windows/models/shared_params.dart';
+import 'package:viper4windows/models/viper_params_layout.dart';
 import 'package:viper4windows/services/file_logger.dart';
 import 'package:viper4windows/services/win32_security.dart';
 
@@ -68,15 +68,40 @@ typedef _SetEventDart = int Function(int hEvent);
 
 const _invalidHandle = -1;
 const _pageReadWrite = 0x04;
-const _fileMapReadWrite = 0x0006; // FILE_MAP_READ | FILE_MAP_WRITE
-const _shmSize = 4096;
+const _fileMapReadWrite = 0x0006;
+
+const _paramsShmName = r'Global\ViPER4Windows_Params';
+const _paramsShmSize = 4096;
+
+const _statusShmName = r'Global\ViPER4Windows_Status';
+const _statusShmSize = 256;
+
+const _eventName = r'Global\ViPER4Windows_ParamsChanged';
+
+const _v4wMagic = 0x534D3456;
+const _v4wFormatVersion = 2;
+
+const _hdrMagic = 0;
+const _hdrVersion = 4;
+const _hdrActiveIndex = 8;
+const _hdrUpdateCount = 12;
+const _hdrMasterEnabled = 16;
+const _hdrSize = 24;
+
+const _slotAOffset = _hdrSize;
+final _slotBOffset = _hdrSize + ViperParamsLayout.SIZE;
+
+const _statusMagic = 0;
+const _statusSampleRate = 20;
+const _statusProcessedFrames = 24;
+const _statusVersionName = 32;
+const _statusVersionNameLen = 32;
+const _statusArchString = 64;
+const _statusArchStringLen = 16;
 
 final _log = AppLogger('SHM');
 
 class SharedMemoryService {
-  static const _shmName = r'Global\ViPER4Windows_Params';
-  static const _eventName = r'Global\ViPER4Windows_ParamsChanged';
-
   late final DynamicLibrary _kernel32;
   late final _CreateFileMappingWDart _createFileMapping;
   late final _MapViewOfFileDart _mapViewOfFile;
@@ -85,10 +110,15 @@ class SharedMemoryService {
   late final _CreateEventWDart _createEvent;
   late final _SetEventDart _setEvent;
 
-  int _hMap = 0;
-  Pointer? _pView;
+  int _hParamsMap = 0;
+  Pointer? _pParamsView;
+  int _hStatusMap = 0;
+  Pointer? _pStatusView;
   int _hEvent = 0;
   Pointer? _pSD;
+
+  int _producerActiveSlot = 1;
+  int _updateCount = 0;
 
   SharedMemoryService() {
     _kernel32 = DynamicLibrary.open('kernel32.dll');
@@ -116,30 +146,37 @@ class SharedMemoryService {
     _pSD = pSD;
     final saPtr = sa != null ? sa.cast<Never>() : nullptr;
 
-    final shmNamePtr = _shmName.toNativeUtf16();
-    _hMap = _createFileMapping(
-      _invalidHandle,
-      saPtr,
-      _pageReadWrite,
-      0,
-      _shmSize,
-      shmNamePtr,
+    final paramsName = _paramsShmName.toNativeUtf16();
+    _hParamsMap = _createFileMapping(
+      _invalidHandle, saPtr, _pageReadWrite, 0, _paramsShmSize, paramsName,
     );
-    calloc.free(shmNamePtr);
-
-    if (_hMap == 0) {
-      _log.error('CreateFileMapping failed for $_shmName');
+    calloc.free(paramsName);
+    if (_hParamsMap == 0) {
+      _log.error('CreateFileMapping failed for $_paramsShmName');
       freeSecurityAttributes(sa, _pSD);
       return;
     }
-
-    _pView = _mapViewOfFile(_hMap, _fileMapReadWrite, 0, 0, _shmSize);
-    if (_pView == null || _pView == nullptr) {
-      _log.error('MapViewOfFile failed');
-      _closeHandle(_hMap);
-      _hMap = 0;
+    _pParamsView = _mapViewOfFile(
+      _hParamsMap, _fileMapReadWrite, 0, 0, _paramsShmSize,
+    );
+    if (_pParamsView == null || _pParamsView == nullptr) {
+      _log.error('MapViewOfFile failed for params shm');
+      _closeHandle(_hParamsMap);
+      _hParamsMap = 0;
       freeSecurityAttributes(sa, _pSD);
       return;
+    }
+    _initParamsHeader();
+
+    final statusName = _statusShmName.toNativeUtf16();
+    _hStatusMap = _createFileMapping(
+      _invalidHandle, saPtr, _pageReadWrite, 0, _statusShmSize, statusName,
+    );
+    calloc.free(statusName);
+    if (_hStatusMap != 0) {
+      _pStatusView = _mapViewOfFile(
+        _hStatusMap, _fileMapReadWrite, 0, 0, _statusShmSize,
+      );
     }
 
     final eventNamePtr = _eventName.toNativeUtf16();
@@ -147,30 +184,54 @@ class SharedMemoryService {
     calloc.free(eventNamePtr);
 
     freeSecurityAttributes(sa, _pSD);
-    _log.info('Opened: $_shmName');
+    _log.info('Opened: $_paramsShmName + $_statusShmName');
   }
 
-  void writeParams(ByteData data) {
-    if (_pView == null || _pView == nullptr) return;
-
-    final src = data.buffer.asUint8List();
-    final dst = _pView!.cast<Uint8>();
-    final writeLen = SharedParamsLayout.uiWriteSize;
-
-    for (var i = 0; i < writeLen && i < src.length; i++) {
-      if (i >= SharedParamsLayout.sequenceNumber &&
-          i < SharedParamsLayout.sequenceNumber + 4) {
-        continue;
-      }
-      dst[i] = src[i];
+  void _initParamsHeader() {
+    if (_pParamsView == null || _pParamsView == nullptr) return;
+    final bytes = _pParamsView!.cast<Uint8>();
+    final bd = ByteData(_hdrSize);
+    bd.setUint32(_hdrMagic, _v4wMagic, Endian.little);
+    bd.setUint32(_hdrVersion, _v4wFormatVersion, Endian.little);
+    bd.setUint32(_hdrActiveIndex, 0, Endian.little);
+    bd.setUint32(_hdrUpdateCount, 0, Endian.little);
+    bd.setUint32(_hdrMasterEnabled, 0, Endian.little);
+    final src = bd.buffer.asUint8List();
+    for (var i = 0; i < _hdrSize; i++) {
+      bytes[i] = src[i];
     }
-    for (
-      var i = SharedParamsLayout.sequenceNumber;
-      i < SharedParamsLayout.sequenceNumber + 4 && i < writeLen;
-      i++
-    ) {
-      dst[i] = src[i];
+  }
+
+  void writeParams(ByteData params, {required bool masterEnabled}) {
+    if (_pParamsView == null || _pParamsView == nullptr) return;
+    if (params.lengthInBytes != ViperParamsLayout.SIZE) {
+      _log.error(
+        'writeParams: payload size ${params.lengthInBytes} != ${ViperParamsLayout.SIZE}',
+      );
+      return;
     }
+    final bytes = _pParamsView!.cast<Uint8>();
+    final src = params.buffer.asUint8List();
+
+    final nextSlot = 1 - _producerActiveSlot;
+    final slotOffset = nextSlot == 0 ? _slotAOffset : _slotBOffset;
+    for (var i = 0; i < ViperParamsLayout.SIZE; i++) {
+      bytes[slotOffset + i] = src[i];
+    }
+
+    final hdrBd = ByteData(4);
+    hdrBd.setUint32(0, masterEnabled ? 1 : 0, Endian.little);
+    final hdrSrc = hdrBd.buffer.asUint8List();
+    for (var i = 0; i < 4; i++) {
+      bytes[_hdrMasterEnabled + i] = hdrSrc[i];
+    }
+
+    final base = _pParamsView!.address;
+    Pointer<Int32>.fromAddress(base + _hdrActiveIndex).value = nextSlot;
+    _producerActiveSlot = nextSlot;
+
+    _updateCount++;
+    Pointer<Int32>.fromAddress(base + _hdrUpdateCount).value = _updateCount;
 
     if (_hEvent != 0) {
       _setEvent(_hEvent);
@@ -179,40 +240,23 @@ class SharedMemoryService {
 
   ({int sampleRate, int processedFrames, String version, String arch})
   readApoStatus() {
-    if (_pView == null || _pView == nullptr) {
+    if (_pStatusView == null || _pStatusView == nullptr) {
       return (sampleRate: 0, processedFrames: 0, version: '', arch: '');
     }
 
-    final bytes = _pView!.cast<Uint8>();
-    final bd = ByteData(8);
-
-    for (var i = 0; i < 4; i++) {
-      bd.setUint8(i, bytes[SharedParamsLayout.apoSampleRate + i]);
+    final bytes = _pStatusView!.cast<Uint8>();
+    final magic = _readUint32(bytes, _statusMagic);
+    if (magic != _v4wMagic) {
+      return (sampleRate: 0, processedFrames: 0, version: '', arch: '');
     }
-    final sampleRate = bd.getUint32(0, Endian.little);
-
-    final bd2 = ByteData(8);
-    for (var i = 0; i < 8; i++) {
-      bd2.setUint8(i, bytes[SharedParamsLayout.apoProcessTimeMs + i]);
-    }
-    final processedFrames = bd2.getUint64(0, Endian.little);
-
-    final versionBytes = <int>[];
-    for (var i = 0; i < SharedParamsLayout.apoVersionStringLen; i++) {
-      final b = bytes[SharedParamsLayout.apoVersionString + i];
-      if (b == 0) break;
-      versionBytes.add(b);
-    }
-    final version = String.fromCharCodes(versionBytes);
-
-    final archBytes = <int>[];
-    for (var i = 0; i < SharedParamsLayout.apoArchStringLen; i++) {
-      final b = bytes[SharedParamsLayout.apoArchString + i];
-      if (b == 0) break;
-      archBytes.add(b);
-    }
-    final arch = String.fromCharCodes(archBytes);
-
+    final sampleRate = _readUint32(bytes, _statusSampleRate);
+    final processedFrames = _readUint64(bytes, _statusProcessedFrames);
+    final version = _readNullTerminatedString(
+      bytes, _statusVersionName, _statusVersionNameLen,
+    );
+    final arch = _readNullTerminatedString(
+      bytes, _statusArchString, _statusArchStringLen,
+    );
     return (
       sampleRate: sampleRate,
       processedFrames: processedFrames,
@@ -221,14 +265,49 @@ class SharedMemoryService {
     );
   }
 
-  void close() {
-    if (_pView != null && _pView != nullptr) {
-      _unmapViewOfFile(_pView!);
-      _pView = null;
+  static int _readUint32(Pointer<Uint8> bytes, int offset) {
+    final bd = ByteData(4);
+    for (var i = 0; i < 4; i++) {
+      bd.setUint8(i, bytes[offset + i]);
     }
-    if (_hMap != 0) {
-      _closeHandle(_hMap);
-      _hMap = 0;
+    return bd.getUint32(0, Endian.little);
+  }
+
+  static int _readUint64(Pointer<Uint8> bytes, int offset) {
+    final bd = ByteData(8);
+    for (var i = 0; i < 8; i++) {
+      bd.setUint8(i, bytes[offset + i]);
+    }
+    return bd.getUint64(0, Endian.little);
+  }
+
+  static String _readNullTerminatedString(
+    Pointer<Uint8> bytes, int offset, int maxLen) {
+    final out = <int>[];
+    for (var i = 0; i < maxLen; i++) {
+      final b = bytes[offset + i];
+      if (b == 0) break;
+      out.add(b);
+    }
+    return String.fromCharCodes(out);
+  }
+
+  void close() {
+    if (_pParamsView != null && _pParamsView != nullptr) {
+      _unmapViewOfFile(_pParamsView!);
+      _pParamsView = null;
+    }
+    if (_hParamsMap != 0) {
+      _closeHandle(_hParamsMap);
+      _hParamsMap = 0;
+    }
+    if (_pStatusView != null && _pStatusView != nullptr) {
+      _unmapViewOfFile(_pStatusView!);
+      _pStatusView = null;
+    }
+    if (_hStatusMap != 0) {
+      _closeHandle(_hStatusMap);
+      _hStatusMap = 0;
     }
     if (_hEvent != 0) {
       _closeHandle(_hEvent);
