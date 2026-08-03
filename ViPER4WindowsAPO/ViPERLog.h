@@ -6,6 +6,24 @@
 #include <strsafe.h>
 #include <windows.h>
 
+namespace detail {
+
+inline CRITICAL_SECTION &LogCS() {
+    static CRITICAL_SECTION cs;
+    static volatile LONG state = 0;
+    if (InterlockedCompareExchange(&state, 1, 0) == 0) {
+        InitializeCriticalSectionAndSpinCount(&cs, 4000);
+        InterlockedExchange(&state, 2);
+    } else {
+        while (InterlockedCompareExchange(&state, 2, 2) != 2) {
+            SwitchToThread();
+        }
+    }
+    return cs;
+}
+
+}  // namespace detail
+
 static void ViPERLog(const char *fmt, ...) {
     char buf[1024];
     va_list args;
@@ -14,10 +32,12 @@ static void ViPERLog(const char *fmt, ...) {
     va_end(args);
     OutputDebugStringA(buf);
 
-    static bool dirCreated = false;
-    if (!dirCreated) {
+    EnterCriticalSection(&detail::LogCS());
+
+    static bool dir_created = false;
+    if (!dir_created) {
         CreateDirectoryW(L"C:\\ProgramData\\ViPER4Windows", nullptr);
-        dirCreated = true;
+        dir_created = true;
     }
 
     FILE *f = nullptr;
@@ -27,6 +47,8 @@ static void ViPERLog(const char *fmt, ...) {
         fflush(f);
         fclose(f);
     }
+
+    LeaveCriticalSection(&detail::LogCS());
 }
 
 #endif

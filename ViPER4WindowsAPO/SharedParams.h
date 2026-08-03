@@ -3,194 +3,87 @@
 
 #include <cstdint>
 
-#define VIPER_SHM_NAME L"Global\\ViPER4Windows_Params"
+#include "include/ViPERParams.h"
+
+#define VIPER_PARAMS_SHM_NAME L"Global\\ViPER4Windows_Params"
+#define VIPER_STATUS_SHM_NAME L"Global\\ViPER4Windows_Status"
 #define VIPER_EVENT_NAME L"Global\\ViPER4Windows_ParamsChanged"
 
-#pragma pack(push, 1)
-struct ViPERSharedParams {
+#define VIPER_PARAMS_SHM_SIZE 4096
+#define VIPER_STATUS_SHM_SIZE 256
+#define VIPER_FORMAT_VERSION 2
+#define VIPER_SHM_MAGIC 0x534D3456 // 'V4MS' little-endian-ish
+
+#pragma pack(push, 4)
+struct V4WHeader {
+    uint32_t magic;
     uint32_t version;
-    uint32_t sequenceNumber;
+    uint32_t active_index;
+    uint32_t update_count;
+    uint32_t master_enabled;
+    uint32_t _pad;
+};
+#pragma pack(pop)
+static_assert(sizeof(V4WHeader) == 24, "V4WHeader must be 24 bytes");
 
-    uint32_t masterEnabled;
-    uint32_t fxType;
+constexpr uint32_t kV4WSlotAOffset = sizeof(V4WHeader);
+constexpr uint32_t kV4WSlotBOffset = kV4WSlotAOffset + sizeof(viper::ViPERParams);
 
-    uint32_t outputVolume;
-    int32_t channelPan;
-    uint32_t limiterThreshold;
+static_assert(
+    kV4WSlotBOffset + sizeof(viper::ViPERParams) <= VIPER_PARAMS_SHM_SIZE,
+    "Two ViPERParams snapshots + V4WHeader must fit in shm_params"
+);
 
-    uint32_t agcEnabled;
-    uint32_t agcStrength;
-    uint32_t agcMaxGain;
-    uint32_t agcThreshold;
+#pragma pack(push, 4)
+struct V4WStatus {
+    uint32_t magic;
+    uint32_t version;
+    uint32_t status_seq;
 
-    uint32_t fetCompressorEnabled;
-    int32_t fetCompressorThreshold;
-    int32_t fetCompressorRatio;
-    uint32_t fetCompressorAutoKnee;
-    int32_t fetCompressorKnee;
-    int32_t fetCompressorKneeMulti;
-    uint32_t fetCompressorAutoGain;
-    int32_t fetCompressorGain;
-    uint32_t fetCompressorAutoAttack;
-    int32_t fetCompressorAttack;
-    int32_t fetCompressorMaxAttack;
-    uint32_t fetCompressorAutoRelease;
-    int32_t fetCompressorRelease;
-    int32_t fetCompressorMaxRelease;
-    int32_t fetCompressorCrest;
-    int32_t fetCompressorAdapt;
-    uint32_t fetCompressorNoClip;
+    uint32_t enabled;
+    uint32_t configured;
+    uint32_t sample_rate;
+    uint64_t processedFrames;
 
-    uint32_t ddcEnabled;
-
-    uint32_t spectrumExtensionEnabled;
-    uint32_t spectrumExtensionBark;
-    int32_t spectrumExtensionExciter;
-
-    uint32_t equalizerEnabled;
-    uint32_t equalizerBandCount;
-    int32_t equalizerBands[31];
-
-    uint32_t convolutionEnabled;
-    int32_t convolutionCrossChannel;
-
-    uint32_t fieldSurroundEnabled;
-    uint32_t fieldSurroundWidening;
-    int32_t fieldSurroundMidImage;
-    int32_t fieldSurroundDepth;
-
-    uint32_t diffSurroundEnabled;
-    uint32_t diffSurroundDelay;
-    uint32_t diffSurroundReverse;
-    int32_t diffSurroundWetDryMix;
-    int32_t diffSurroundLpCutoff;
-
-    uint32_t vheEnabled;
-    uint32_t vheQuality;
-
-    uint32_t reverberationEnabled;
-    int32_t reverberationRoomSize;
-    int32_t reverberationRoomWidth;
-    int32_t reverberationRoomDampening;
-    int32_t reverberationWetSignal;
-    int32_t reverberationDrySignal;
-
-    uint32_t dynamicSystemEnabled;
-    int32_t dynamicSystemXLow;
-    int32_t dynamicSystemXHigh;
-    int32_t dynamicSystemYLow;
-    int32_t dynamicSystemYHigh;
-    int32_t dynamicSystemSideGainLow;
-    int32_t dynamicSystemSideGainHigh;
-    int32_t dynamicSystemStrength;
-
-    uint32_t tubeSimulatorEnabled;
-
-    uint32_t viperBassEnabled;
-    uint32_t viperBassMode;
-    uint32_t viperBassFrequency;
-    uint32_t viperBassGain;
-    uint32_t viperBassAntiPop;
-
-    uint32_t viperBassMonoEnabled;
-    uint32_t viperBassMonoMode;
-    uint32_t viperBassMonoFrequency;
-    uint32_t viperBassMonoGain;
-    uint32_t viperBassMonoAntiPop;
-
-    uint32_t viperClarityEnabled;
-    uint32_t viperClarityMode;
-    uint32_t viperClarityGain;
-
-    uint32_t cureEnabled;
-    uint32_t cureCrossfeedStrength;
-
-    uint32_t analogXEnabled;
-    uint32_t analogXMode;
-
-    uint32_t speakerCorrectionEnabled;
-
-    uint32_t mbcEnabled;
-    uint32_t mbcBandCount;
-    int32_t mbcThresholds[5];
-    int32_t mbcRatios[5];
-    int32_t mbcKnees[5];
-    uint32_t mbcAutoKnees[5];
-    int32_t mbcGains[5];
-    uint32_t mbcAutoGains[5];
-    int32_t mbcAttacks[5];
-    uint32_t mbcAutoAttacks[5];
-    int32_t mbcReleases[5];
-    uint32_t mbcAutoReleases[5];
-    int32_t mbcKneeMultis[5];
-    int32_t mbcMaxAttacks[5];
-    int32_t mbcMaxReleases[5];
-    int32_t mbcCrests[5];
-    int32_t mbcAdapts[5];
-    uint32_t mbcNoClips[5];
-    uint32_t mbcBandEnables[5];
-    int32_t mbcCrossovers[4];
-
-    uint32_t dynEqEnabled;
-    uint32_t dynEqBandCount;
-    int32_t dynEqFreqs[8];
-    int32_t dynEqQs[8];
-    int32_t dynEqGains[8];
-    int32_t dynEqThresholds[8];
-    int32_t dynEqAttacks[8];
-    int32_t dynEqReleases[8];
-    int32_t dynEqFilterTypes[8];
-
-    uint32_t stereoImagerEnabled;
-    int32_t stereoImagerLowWidth;
-    int32_t stereoImagerMidWidth;
-    int32_t stereoImagerHighWidth;
-    int32_t stereoImagerLowCrossover;
-    int32_t stereoImagerHighCrossover;
-
-    uint32_t lufsEnabled;
-    int32_t lufsTarget;
-    int32_t lufsMaxGain;
-    int32_t lufsSpeed;
-
-    uint32_t psychoBassEnabled;
-    int32_t psychoBassCutoff;
-    int32_t psychoBassIntensity;
-    int32_t psychoBassHarmonicOrder;
-    int32_t psychoBassOriginalLevel;
-
-    uint32_t apoSampleRate;
-    uint64_t apoProcessTimeMs;
-    char apoVersionString[32];
-    char apoArchString[16];
+    char version_name[32];
+    char arch_string[16];
 };
 #pragma pack(pop)
 
-static_assert(sizeof(ViPERSharedParams) <= 4096, "SharedParams must fit in a page");
+static_assert(
+    sizeof(V4WStatus) <= VIPER_STATUS_SHM_SIZE, "V4WStatus must fit in shm_status"
+);
 
 #define VIPER_BULK_SHM_NAME L"Global\\ViPER4Windows_BulkData"
 #define VIPER_BULK_EVENT_NAME L"Global\\ViPER4Windows_BulkDataReady"
-#define VIPER_BULK_ACK_EVENT_NAME L"Global\\ViPER4Windows_BulkDataAck"
-#define VIPER_BULK_SHM_SIZE 65536
+#define VIPER_BULK_SHM_SIZE (4 * 1024 * 1024)
 
 #define VIPER_BULK_CMD_DDC 1
-#define VIPER_BULK_CMD_CONVOLVER_PREPARE 2
-#define VIPER_BULK_CMD_CONVOLVER_CHUNK 3
-#define VIPER_BULK_CMD_CONVOLVER_COMMIT 4
+#define VIPER_BULK_CMD_CONVOLVER_KERNEL 2
 
-#pragma pack(push, 1)
+#pragma pack(push, 4)
 struct ViPERBulkHeader {
+    uint32_t magic;
+    uint32_t version;
+    uint32_t seq;
     uint32_t command;
-    uint32_t param;
-    uint32_t dataSize;
+    uint32_t data_size;
+
     uint32_t arg1;
     uint32_t arg2;
     uint32_t arg3;
-    uint32_t arg4;
-    uint32_t _pad;
 };
 #pragma pack(pop)
 
 static_assert(sizeof(ViPERBulkHeader) == 32, "BulkHeader must be 32 bytes");
+
+constexpr uint32_t kBulkDdcBase = 0;
+constexpr uint32_t kBulkDdcRegionSize = 2 * 1024 * 1024;
+constexpr uint32_t kBulkConvolverBase = kBulkDdcRegionSize;
+constexpr uint32_t kBulkConvolverRegionSize = 2 * 1024 * 1024;
+
+constexpr uint32_t kBulkHeaderSize = sizeof(ViPERBulkHeader);
+constexpr uint32_t kBulkDdcMaxPayload = kBulkDdcRegionSize - kBulkHeaderSize;
+constexpr uint32_t kBulkConvolverMaxPayload = kBulkConvolverRegionSize - kBulkHeaderSize;
 
 #endif

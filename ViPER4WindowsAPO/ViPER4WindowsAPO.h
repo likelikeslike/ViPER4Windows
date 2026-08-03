@@ -55,12 +55,19 @@ public:
 
     // IAudioProcessingObject
     STDMETHOD(GetLatency)(HNSTIME *pTime);
+    STDMETHOD(GetRegistrationProperties)(APO_REG_PROPERTIES **ppRegProps);
     STDMETHOD(Initialize)(UINT32 cbDataSize, BYTE *pbyData);
     STDMETHOD(IsInputFormatSupported)(
         IAudioMediaType *pOppositeFormat,
         IAudioMediaType *pRequestedInputFormat,
         IAudioMediaType **ppSupportedInputFormat
     );
+    STDMETHOD(IsOutputFormatSupported)(
+        IAudioMediaType *pOppositeFormat,
+        IAudioMediaType *pRequestedOutputFormat,
+        IAudioMediaType **ppSupportedOutputFormat
+    );
+    STDMETHOD(Reset)();
 
     // IAudioProcessingObjectConfiguration
     STDMETHOD(LockForProcess)(
@@ -84,41 +91,54 @@ public:
 private:
     void TryOpenSharedMemory();
     void CloseSharedMemory();
-    void ApplyParamsToEngine(const ViPERSharedParams &params);
-    void ProcessBulkData();
+    void ApplyParamsToEngine(const viper::ViPERParams &params);
+    bool CheckAndReloadBulk(uint32_t base, uint32_t region_size, uint32_t &last_seq);
+    void DispatchBulk(
+        const ViPERBulkHeader &hdr, const uint8_t *payload, uint32_t region_size
+    );
     void CheckAndApplyParams();
+    void WriteStatusShm();
 
     static unsigned long __stdcall ParamWatchThread(void *parameter);
     void StartParamWatch();
     void StopParamWatch();
     void ResetChild();
 
-    std::unique_ptr<ViPER> mEngine;
-    std::mutex mEngineLock;
-    std::vector<float> mProcessBuffer;
+    std::unique_ptr<ViPER> engine_;
+    std::mutex engine_lock_;
+    std::vector<float> process_buffer_;
 
-    HANDLE mMapFile = nullptr;
-    ViPERSharedParams *mSharedParams = nullptr;
-    std::atomic<uint32_t> mLastSequence{0};
-    std::atomic<bool> mMasterEnabled{true};
-    ULONGLONG mLastShmAttempt = 0;
+    std::atomic<viper::ViPERParams *> staged_params_{nullptr};
+    std::atomic<viper::ViPERParams *> consumed_params_{nullptr};
+    std::atomic<bool> staged_master_off_{false};
 
-    HANDLE mBulkMapFile = nullptr;
-    void *mBulkData = nullptr;
-    HANDLE mBulkEvent = nullptr;
-    HANDLE mBulkAckEvent = nullptr;
+    HANDLE params_map_ = nullptr;
+    uint8_t *params_base_ = nullptr;
+    uint32_t last_update_count_ = 0;
+    std::atomic<bool> master_enabled_{true};
+    ULONGLONG last_shm_attempt_ = 0;
 
-    HANDLE mParamEvent = nullptr;
-    HANDLE mShutdownEvent = nullptr;
-    HANDLE mWatchThread = nullptr;
+    HANDLE status_map_ = nullptr;
+    uint8_t *status_base_ = nullptr;
+    uint32_t status_seq_ = 0;
 
-    UINT32 mChannelCount = 2;
-    UINT32 mSampleRate = 48000;
-    UINT32 mMaxFrames = 0;
+    HANDLE bulk_map_file_ = nullptr;
+    void *bulk_data_ = nullptr;
+    HANDLE bulk_event_ = nullptr;
+    uint32_t last_bulk_ddc_seq_ = 0;
+    uint32_t last_bulk_convolver_seq_ = 0;
 
-    IAudioProcessingObject *mChildAPO = nullptr;
-    IAudioProcessingObjectRT *mChildRT = nullptr;
-    IAudioProcessingObjectConfiguration *mChildCfg = nullptr;
+    HANDLE param_event_ = nullptr;
+    HANDLE shutdown_event_ = nullptr;
+    HANDLE watch_thread_ = nullptr;
 
-    wchar_t mEndpointId[64] = {};
+    UINT32 channel_count_ = 2;
+    UINT32 sample_rate_ = 48000;
+    UINT32 max_frames_ = 0;
+
+    IAudioProcessingObject *child_apo_ = nullptr;
+    IAudioProcessingObjectRT *child_rt_ = nullptr;
+    IAudioProcessingObjectConfiguration *child_cfg_ = nullptr;
+
+    wchar_t endpoint_id_[64] = {};
 };
