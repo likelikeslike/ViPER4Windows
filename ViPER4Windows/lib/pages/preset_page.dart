@@ -54,7 +54,7 @@ class _PresetPageState extends State<PresetPage> {
   Widget build(BuildContext context) {
     final state = context.watch<ViperState>();
     final l = S.of(context)!;
-    final modeLabel = state.fxType == 0 ? l.headphone : l.speaker;
+    final modeLabel = state.isCurrentDeviceHeadphone ? l.headphone : l.speaker;
 
     return ScaffoldPage.scrollable(
       padding: const EdgeInsets.all(20),
@@ -201,9 +201,7 @@ class _PresetPageState extends State<PresetPage> {
       child: Row(
         children: [
           Icon(
-            state.presetIsHeadphone(name)
-                ? FluentIcons.headset
-                : FluentIcons.volume2,
+            FluentIcons.file_template,
             size: 14,
             color: AppColors.subtitleText,
           ),

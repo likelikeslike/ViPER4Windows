@@ -84,8 +84,8 @@ class _EqualizerPageState extends State<EqualizerPage> {
         EffectCard(
           title: l.firEqualizer,
           masterEnabled: state.masterEnabled,
-          enabled: state.active.eq.enabled,
-          onToggle: (v) => state.update((s) => s.eq.enabled = v),
+          enabled: state.active.eq.enable,
+          onToggle: (v) => state.update((s) => s.eq.enable = v),
           child: _buildContent(state, bandCount, labels, l),
         ),
         _buildDynEq(state, l),
@@ -461,8 +461,8 @@ class _EqualizerPageState extends State<EqualizerPage> {
     return EffectCard(
       title: l.dynamicEq,
       masterEnabled: state.masterEnabled,
-      enabled: state.active.dynamicEq.enabled,
-      onToggle: (v) => state.update((s) => s.dynamicEq.enabled = v),
+      enabled: state.active.dynamicEq.enable,
+      onToggle: (v) => state.update((s) => s.dynamicEq.enable = v),
       child: Column(
         children: [
           const SizedBox(height: 8),
@@ -540,7 +540,7 @@ class _EqualizerPageState extends State<EqualizerPage> {
                     ),
                   );
                 }),
-                if (bandCount < 8 &&
+                if (bandCount < 10 &&
                     (bandCount == 0 ||
                         state.active.dynamicEq.freqs[bandCount - 1] < 20000))
                   Padding(

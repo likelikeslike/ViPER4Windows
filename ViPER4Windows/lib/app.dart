@@ -91,17 +91,35 @@ class _ShellState extends State<_Shell> with WindowListener {
   Rect? _lastBounds;
 
   @override
+  void onWindowBlur() {
+    context.read<ViperState>().saveIfDirty();
+  }
+
+  @override
+  void onWindowMinimize() {
+    context.read<ViperState>().saveIfDirty();
+  }
+
+  @override
   void onWindowClose() async {
+    final viperState = context.read<ViperState>();
     final isPreventClose = await windowManager.isPreventClose();
     if (isPreventClose) {
       _log.info('Window close -> minimize to tray');
       _lastBounds = await windowManager.getBounds();
-      context.read<ViperState>().saveSettingsSync();
+      viperState.saveIfDirty();
       await windowManager.hide();
     }
   }
 
   Future<void> _restoreWindow() async {
+    if (await windowManager.isVisible()) {
+      if (await windowManager.isMinimized()) {
+        await windowManager.restore();
+      }
+      await windowManager.focus();
+      return;
+    }
     if (_lastBounds != null) {
       await windowManager.setBounds(_lastBounds);
     } else {
@@ -113,7 +131,6 @@ class _ShellState extends State<_Shell> with WindowListener {
       await windowManager.setSize(Size(1100 * s, 720 * s));
       await windowManager.center();
     }
-    await windowManager.setMinimumSize(const Size(1100, 720));
     await windowManager.show();
     await windowManager.focus();
   }
@@ -125,7 +142,8 @@ class _ShellState extends State<_Shell> with WindowListener {
     );
 
     _systemTray.registerSystemTrayEventHandler((eventName) async {
-      if (eventName == kSystemTrayEventClick) {
+      if (eventName == kSystemTrayEventClick ||
+          eventName == kSystemTrayEventDoubleClick) {
         _restoreWindow();
       } else if (eventName == kSystemTrayEventRightClick) {
         _systemTray.popUpContextMenu();
@@ -150,7 +168,7 @@ class _ShellState extends State<_Shell> with WindowListener {
         onClicked: (_) async {
           _log.info('Quit requested');
           FileLogger.shared.flush();
-          context.read<ViperState>().saveSettingsSync();
+          context.read<ViperState>().saveIfDirty();
           await _systemTray.destroy();
           await windowManager.setPreventClose(false);
           await windowManager.destroy();
@@ -221,8 +239,6 @@ class _ShellState extends State<_Shell> with WindowListener {
                   ],
                 ),
               ),
-            _buildFxToggle(state, l),
-            const SizedBox(width: 16),
             _buildMasterToggle(state, l),
             const SizedBox(width: 8),
           ],
@@ -300,64 +316,6 @@ class _ShellState extends State<_Shell> with WindowListener {
           onChanged: (v) => state.masterEnabled = v,
         ),
       ],
-    );
-  }
-
-  Widget _buildFxToggle(ViperState state, S l) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _FxButton(
-          label: l.headphone,
-          selected: state.fxType == 0,
-          onTap: () => state.fxType = 0,
-        ),
-        const SizedBox(width: 4),
-        _FxButton(
-          label: l.speaker,
-          selected: state.fxType == 1,
-          onTap: () => state.fxType = 1,
-        ),
-      ],
-    );
-  }
-}
-
-class _FxButton extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _FxButton({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: selected
-              ? AppColors.accent.withOpacity(0.2)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(4),
-          border: Border.all(
-            color: selected ? AppColors.accent : const Color(0xFF404060),
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-            color: selected ? AppColors.accent : AppColors.disabledText,
-          ),
-        ),
-      ),
     );
   }
 }

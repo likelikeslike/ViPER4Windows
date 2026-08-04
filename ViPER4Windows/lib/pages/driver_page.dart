@@ -220,7 +220,7 @@ class _DriverPageState extends State<DriverPage> {
           const Divider(),
           _statusRow(
             l.fxMode,
-            state.activeDeviceType == 0 ? l.headphone : l.speaker,
+            state.isCurrentDeviceHeadphone ? l.headphone : l.speaker,
           ),
         ],
       ),
