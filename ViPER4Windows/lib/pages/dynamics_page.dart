@@ -10,6 +10,9 @@ import 'package:viper4windows/theme/app_colors.dart';
 import 'package:viper4windows/widgets/effect_card.dart';
 import 'package:viper4windows/widgets/labeled_slider.dart';
 
+double _rawToDb(double raw) => raw > 0 ? 20.0 * log(raw / 100.0) / ln10 : -99.9;
+double _dbToRaw(double db) => (pow(10, db / 20.0) * 100).roundToDouble();
+
 class DynamicsPage extends StatefulWidget {
   const DynamicsPage({super.key});
 
@@ -26,6 +29,11 @@ class _DynamicsPageState extends State<DynamicsPage> {
   void dispose() {
     _dsPresetNameController.dispose();
     super.dispose();
+  }
+
+  void _editDs(ViperState state, void Function(DynamicSystemState) update) {
+    state.update((s) => update(s.dynamicSystem));
+    if (_selectedDsPreset != -1) setState(() => _selectedDsPreset = -1);
   }
 
   @override
@@ -100,7 +108,11 @@ class _DynamicsPageState extends State<DynamicsPage> {
               ),
               Expanded(
                 child: ComboBox<int>(
-                  value: _selectedDsPreset,
+                  value: _selectedDsPreset == -1 ? null : _selectedDsPreset,
+                  placeholder: Text(
+                    l.custom,
+                    style: const TextStyle(fontSize: 12),
+                  ),
                   items: items,
                   onChanged: (v) {
                     if (v == null) return;
@@ -130,7 +142,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
                     final idx = _selectedDsPreset - 1000;
                     if (idx < userPresets.length) {
                       state.deleteDsPreset(userPresets[idx]);
-                      setState(() => _selectedDsPreset = 0);
+                      setState(() => _selectedDsPreset = -1);
                     }
                   },
                 ),
@@ -143,6 +155,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
             max: 100,
             divisions: 100,
             valueFormatter: (v) => '${v.round()}%',
+            unit: '%',
             onChanged: (v) =>
                 state.update((s) => s.dynamicSystem.strength = v.round()),
           ),
@@ -153,8 +166,8 @@ class _DynamicsPageState extends State<DynamicsPage> {
             max: 2400,
             divisions: 480,
             valueFormatter: (v) => '${v.round()} Hz',
-            onChanged: (v) =>
-                state.update((s) => s.dynamicSystem.xLow = v.round()),
+            unit: 'Hz',
+            onChanged: (v) => _editDs(state, (d) => d.xLow = v.round()),
           ),
           LabeledSlider(
             label: l.xHighFreq,
@@ -163,8 +176,8 @@ class _DynamicsPageState extends State<DynamicsPage> {
             max: 12000,
             divisions: 2400,
             valueFormatter: (v) => '${v.round()} Hz',
-            onChanged: (v) =>
-                state.update((s) => s.dynamicSystem.xHigh = v.round()),
+            unit: 'Hz',
+            onChanged: (v) => _editDs(state, (d) => d.xHigh = v.round()),
           ),
           LabeledSlider(
             label: l.yLowFreq,
@@ -173,8 +186,8 @@ class _DynamicsPageState extends State<DynamicsPage> {
             max: 200,
             divisions: 200,
             valueFormatter: (v) => '${v.round()} Hz',
-            onChanged: (v) =>
-                state.update((s) => s.dynamicSystem.yLow = v.round()),
+            unit: 'Hz',
+            onChanged: (v) => _editDs(state, (d) => d.yLow = v.round()),
           ),
           LabeledSlider(
             label: l.yHighFreq,
@@ -183,8 +196,8 @@ class _DynamicsPageState extends State<DynamicsPage> {
             max: 300,
             divisions: 60,
             valueFormatter: (v) => '${v.round()} Hz',
-            onChanged: (v) =>
-                state.update((s) => s.dynamicSystem.yHigh = v.round()),
+            unit: 'Hz',
+            onChanged: (v) => _editDs(state, (d) => d.yHigh = v.round()),
           ),
           LabeledSlider(
             label: l.sideGainLow,
@@ -193,8 +206,8 @@ class _DynamicsPageState extends State<DynamicsPage> {
             max: 100,
             divisions: 100,
             valueFormatter: (v) => '${v.round()}%',
-            onChanged: (v) =>
-                state.update((s) => s.dynamicSystem.sideGainLow = v.round()),
+            unit: '%',
+            onChanged: (v) => _editDs(state, (d) => d.sideGainLow = v.round()),
           ),
           LabeledSlider(
             label: l.sideGainHigh,
@@ -203,8 +216,8 @@ class _DynamicsPageState extends State<DynamicsPage> {
             max: 100,
             divisions: 100,
             valueFormatter: (v) => '${v.round()}%',
-            onChanged: (v) =>
-                state.update((s) => s.dynamicSystem.sideGainHigh = v.round()),
+            unit: '%',
+            onChanged: (v) => _editDs(state, (d) => d.sideGainHigh = v.round()),
           ),
         ],
       ),
@@ -227,6 +240,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
             max: 0,
             divisions: 48,
             valueFormatter: (v) => '${v.round()} dB',
+            unit: 'dB',
             onChanged: (v) =>
                 state.update((s) => s.fetCompressor.threshold = v.round()),
           ),
@@ -236,6 +250,9 @@ class _DynamicsPageState extends State<DynamicsPage> {
             min: 0,
             max: 200,
             valueFormatter: (v) => (v / 100).toStringAsFixed(1),
+            toDisplay: (v) => v / 100,
+            fromDisplay: (v) => v * 100,
+            decimals: 1,
             onChanged: (v) =>
                 state.update((s) => s.fetCompressor.ratio = v.round()),
           ),
@@ -251,6 +268,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
             max: 12,
             divisions: 12,
             valueFormatter: (v) => '${v.round()} dB',
+            unit: 'dB',
             enabled: !state.active.fetCompressor.kneeAuto,
             onChanged: (v) =>
                 state.update((s) => s.fetCompressor.knee = v.round()),
@@ -259,8 +277,12 @@ class _DynamicsPageState extends State<DynamicsPage> {
             label: l.kneeMulti,
             value: state.active.fetCompressor.kneeMulti.toDouble(),
             min: 0,
-            max: 400,
-            valueFormatter: (v) => '${(v / 100).toStringAsFixed(1)}x',
+            max: 100,
+            valueFormatter: (v) => '${(v / 100 * 4).toStringAsFixed(1)}x',
+            toDisplay: (v) => v / 100 * 4,
+            fromDisplay: (v) => v / 4 * 100,
+            unit: 'x',
+            decimals: 1,
             onChanged: (v) =>
                 state.update((s) => s.fetCompressor.kneeMulti = v.round()),
           ),
@@ -276,6 +298,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
             max: 24,
             divisions: 24,
             valueFormatter: (v) => '${v.round()} dB',
+            unit: 'dB',
             enabled: !state.active.fetCompressor.gainAuto,
             onChanged: (v) =>
                 state.update((s) => s.fetCompressor.gain = v.round()),
@@ -291,6 +314,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
             min: 1,
             max: 100,
             valueFormatter: (v) => '${v.round()} ms',
+            unit: 'ms',
             enabled: !state.active.fetCompressor.attackAuto,
             onChanged: (v) =>
                 state.update((s) => s.fetCompressor.attack = v.round()),
@@ -301,6 +325,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
             min: 1,
             max: 100,
             valueFormatter: (v) => '${v.round()} ms',
+            unit: 'ms',
             onChanged: (v) =>
                 state.update((s) => s.fetCompressor.maxAttack = v.round()),
           ),
@@ -315,6 +340,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
             min: 5,
             max: 500,
             valueFormatter: (v) => '${v.round()} ms',
+            unit: 'ms',
             enabled: !state.active.fetCompressor.releaseAuto,
             onChanged: (v) =>
                 state.update((s) => s.fetCompressor.release = v.round()),
@@ -325,6 +351,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
             min: 5,
             max: 500,
             valueFormatter: (v) => '${v.round()} ms',
+            unit: 'ms',
             onChanged: (v) =>
                 state.update((s) => s.fetCompressor.maxRelease = v.round()),
           ),
@@ -334,6 +361,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
             min: 5,
             max: 300,
             valueFormatter: (v) => '${v.round()} ms',
+            unit: 'ms',
             onChanged: (v) =>
                 state.update((s) => s.fetCompressor.crest = v.round()),
           ),
@@ -343,6 +371,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
             min: 0,
             max: 200,
             valueFormatter: (v) => '${v.round()}%',
+            unit: '%',
             onChanged: (v) =>
                 state.update((s) => s.fetCompressor.adapt = v.round()),
           ),
@@ -445,6 +474,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
             max: 0,
             divisions: 48,
             valueFormatter: (v) => '${v.round()} dB',
+            unit: 'dB',
             onChanged: (v) => state.update(
               (s) => s.multibandCompressor.thresholds[band] = v.round(),
             ),
@@ -455,6 +485,9 @@ class _DynamicsPageState extends State<DynamicsPage> {
             min: 0,
             max: 200,
             valueFormatter: (v) => (v / 100).toStringAsFixed(1),
+            toDisplay: (v) => v / 100,
+            fromDisplay: (v) => v * 100,
+            decimals: 1,
             onChanged: (v) => state.update(
               (s) => s.multibandCompressor.ratios[band] = v.round(),
             ),
@@ -472,6 +505,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
             max: 12,
             divisions: 12,
             valueFormatter: (v) => '${v.round()} dB',
+            unit: 'dB',
             enabled: !state.active.multibandCompressor.kneeAutos[band],
             onChanged: (v) => state.update(
               (s) => s.multibandCompressor.knees[band] = v.round(),
@@ -490,6 +524,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
             max: 24,
             divisions: 24,
             valueFormatter: (v) => '${v.round()} dB',
+            unit: 'dB',
             enabled: !state.active.multibandCompressor.gainAutos[band],
             onChanged: (v) => state.update(
               (s) => s.multibandCompressor.gains[band] = v.round(),
@@ -508,6 +543,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
             min: 1,
             max: 100,
             valueFormatter: (v) => '${v.round()} ms',
+            unit: 'ms',
             enabled: !state.active.multibandCompressor.attackAutos[band],
             onChanged: (v) => state.update(
               (s) => s.multibandCompressor.attacks[band] = v.round(),
@@ -526,6 +562,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
             min: 5,
             max: 500,
             valueFormatter: (v) => '${v.round()} ms',
+            unit: 'ms',
             enabled: !state.active.multibandCompressor.releaseAutos[band],
             onChanged: (v) => state.update(
               (s) => s.multibandCompressor.releases[band] = v.round(),
@@ -535,8 +572,12 @@ class _DynamicsPageState extends State<DynamicsPage> {
             label: l.kneeMulti,
             value: state.active.multibandCompressor.kneeMultis[band].toDouble(),
             min: 0,
-            max: 400,
-            valueFormatter: (v) => '${(v / 100).toStringAsFixed(1)}x',
+            max: 100,
+            valueFormatter: (v) => '${(v / 100 * 4).toStringAsFixed(1)}x',
+            toDisplay: (v) => v / 100 * 4,
+            fromDisplay: (v) => v / 4 * 100,
+            unit: 'x',
+            decimals: 1,
             onChanged: (v) => state.update(
               (s) => s.multibandCompressor.kneeMultis[band] = v.round(),
             ),
@@ -547,6 +588,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
             min: 1,
             max: 100,
             valueFormatter: (v) => '${v.round()} ms',
+            unit: 'ms',
             onChanged: (v) => state.update(
               (s) => s.multibandCompressor.maxAttacks[band] = v.round(),
             ),
@@ -558,6 +600,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
             min: 5,
             max: 500,
             valueFormatter: (v) => '${v.round()} ms',
+            unit: 'ms',
             onChanged: (v) => state.update(
               (s) => s.multibandCompressor.maxReleases[band] = v.round(),
             ),
@@ -568,6 +611,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
             min: 5,
             max: 300,
             valueFormatter: (v) => '${v.round()} ms',
+            unit: 'ms',
             onChanged: (v) => state.update(
               (s) => s.multibandCompressor.crests[band] = v.round(),
             ),
@@ -578,6 +622,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
             min: 0,
             max: 200,
             valueFormatter: (v) => '${v.round()}%',
+            unit: '%',
             onChanged: (v) => state.update(
               (s) => s.multibandCompressor.adapts[band] = v.round(),
             ),
@@ -596,6 +641,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
               max: 20000,
               divisions: 3996,
               valueFormatter: (v) => '${v.round()} Hz',
+              unit: 'Hz',
               onChanged: (v) => state.update(
                 (s) => s.multibandCompressor.crossovers[band] = v.round(),
               ),
@@ -620,6 +666,10 @@ class _DynamicsPageState extends State<DynamicsPage> {
             min: 50,
             max: 300,
             valueFormatter: (v) => '${(v / 100).toStringAsFixed(1)}x',
+            toDisplay: (v) => v / 100,
+            fromDisplay: (v) => v * 100,
+            unit: 'x',
+            decimals: 1,
             onChanged: (v) =>
                 state.update((s) => s.playbackGainControl.strength = v.round()),
           ),
@@ -629,6 +679,10 @@ class _DynamicsPageState extends State<DynamicsPage> {
             min: 100,
             max: 1000,
             valueFormatter: (v) => '${(v / 100).toStringAsFixed(1)}x',
+            toDisplay: (v) => v / 100,
+            fromDisplay: (v) => v * 100,
+            unit: 'x',
+            decimals: 1,
             onChanged: (v) =>
                 state.update((s) => s.playbackGainControl.maxGain = v.round()),
           ),
@@ -642,6 +696,10 @@ class _DynamicsPageState extends State<DynamicsPage> {
               final dB = pct > 0 ? 20.0 * log(pct / 100.0) / ln10 : -99.9;
               return '${dB.toStringAsFixed(1)}dB';
             },
+            toDisplay: _rawToDb,
+            fromDisplay: _dbToRaw,
+            unit: 'dB',
+            decimals: 1,
             onChanged: (v) => state.update(
               (s) => s.playbackGainControl.outputThreshold = v.round(),
             ),
@@ -666,6 +724,10 @@ class _DynamicsPageState extends State<DynamicsPage> {
             min: 80,
             max: 240,
             valueFormatter: (v) => '${(v / -10.0).toStringAsFixed(1)} LUFS',
+            toDisplay: (v) => v / -10.0,
+            fromDisplay: (v) => v * -10.0,
+            unit: 'LUFS',
+            decimals: 1,
             onChanged: (v) => state.update((s) => s.lufs.target = v.round()),
           ),
           LabeledSlider(
@@ -674,6 +736,10 @@ class _DynamicsPageState extends State<DynamicsPage> {
             min: 0,
             max: 120,
             valueFormatter: (v) => '${(v / 10.0).toStringAsFixed(1)} dB',
+            toDisplay: (v) => v / 10.0,
+            fromDisplay: (v) => v * 10.0,
+            unit: 'dB',
+            decimals: 1,
             onChanged: (v) => state.update((s) => s.lufs.maxGain = v.round()),
           ),
           LabeledSlider(
@@ -687,6 +753,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
               l.speedMedium,
               l.speedFast,
             ][v.round().clamp(0, 2)],
+            editable: false,
             onChanged: (v) => state.update((s) => s.lufs.speed = v.round()),
           ),
         ],
@@ -824,6 +891,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
             max: 100,
             divisions: 100,
             valueFormatter: (v) => '${v.round()}%',
+            unit: '%',
             onChanged: (v) =>
                 state.update((s) => s.convolver.crossChannel = v.round()),
           ),

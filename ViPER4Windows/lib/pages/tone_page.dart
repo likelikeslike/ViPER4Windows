@@ -81,6 +81,9 @@ class TonePage extends StatelessWidget {
               max: 135,
               divisions: 135,
               valueFormatter: (v) => '${v.round() + 15}Hz',
+              toDisplay: (v) => v + 15,
+              fromDisplay: (v) => v - 15,
+              unit: 'Hz',
               onChanged: (v) =>
                   state.update((s) => s.bass.frequency = v.round()),
             ),
@@ -90,6 +93,10 @@ class TonePage extends StatelessWidget {
             min: 50,
             max: 1000,
             valueFormatter: (v) => '${(v / 100).toStringAsFixed(1)}x',
+            toDisplay: (v) => v / 100,
+            fromDisplay: (v) => v * 100,
+            unit: 'x',
+            decimals: 1,
             onChanged: (v) => state.update((s) => s.bass.gain = v.round()),
           ),
           Row(
@@ -158,6 +165,9 @@ class TonePage extends StatelessWidget {
               max: 135,
               divisions: 135,
               valueFormatter: (v) => '${v.round() + 15}Hz',
+              toDisplay: (v) => v + 15,
+              fromDisplay: (v) => v - 15,
+              unit: 'Hz',
               onChanged: (v) =>
                   state.update((s) => s.bassMono.frequency = v.round()),
             ),
@@ -167,6 +177,10 @@ class TonePage extends StatelessWidget {
             min: 50,
             max: 1000,
             valueFormatter: (v) => '${(v / 100).toStringAsFixed(1)}x',
+            toDisplay: (v) => v / 100,
+            fromDisplay: (v) => v * 100,
+            unit: 'x',
+            decimals: 1,
             onChanged: (v) => state.update((s) => s.bassMono.gain = v.round()),
           ),
           Row(
@@ -206,6 +220,7 @@ class TonePage extends StatelessWidget {
             min: 60,
             max: 150,
             valueFormatter: (v) => '${v.round()} Hz',
+            unit: 'Hz',
             onChanged: (v) =>
                 state.update((s) => s.psychoacousticBass.cutoff = v.round()),
           ),
@@ -216,6 +231,7 @@ class TonePage extends StatelessWidget {
             max: 100,
             divisions: 100,
             valueFormatter: (v) => '${v.round()}%',
+            unit: '%',
             onChanged: (v) =>
                 state.update((s) => s.psychoacousticBass.intensity = v.round()),
           ),
@@ -236,6 +252,7 @@ class TonePage extends StatelessWidget {
             max: 100,
             divisions: 100,
             valueFormatter: (v) => '${v.round()}%',
+            unit: '%',
             onChanged: (v) => state.update(
               (s) => s.psychoacousticBass.originalLevel = v.round(),
             ),
@@ -286,6 +303,10 @@ class TonePage extends StatelessWidget {
             min: 0,
             max: 450,
             valueFormatter: (v) => '${(v / 100).toStringAsFixed(1)}x',
+            toDisplay: (v) => v / 100,
+            fromDisplay: (v) => v * 100,
+            unit: 'x',
+            decimals: 1,
             onChanged: (v) => state.update((s) => s.clarity.gain = v.round()),
           ),
         ],
@@ -309,6 +330,7 @@ class TonePage extends StatelessWidget {
             max: 8200,
             divisions: 1200,
             valueFormatter: (v) => '${v.round()} Hz',
+            unit: 'Hz',
             onChanged: (v) =>
                 state.update((s) => s.spectrumExtension.strength = v.round()),
           ),
@@ -319,6 +341,7 @@ class TonePage extends StatelessWidget {
             max: 100,
             divisions: 100,
             valueFormatter: (v) => '${v.round()}%',
+            unit: '%',
             onChanged: (v) =>
                 state.update((s) => s.spectrumExtension.exciter = v.round()),
           ),

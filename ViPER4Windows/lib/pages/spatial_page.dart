@@ -93,6 +93,7 @@ class SpatialPage extends StatelessWidget {
             max: 20,
             divisions: 19,
             valueFormatter: (v) => '${v.round()} ms',
+            unit: 'ms',
             onChanged: (v) =>
                 state.update((s) => s.diffSurround.delay = v.round()),
           ),
@@ -121,6 +122,7 @@ class SpatialPage extends StatelessWidget {
             max: 100,
             divisions: 100,
             valueFormatter: (v) => '${v.round()}%',
+            unit: '%',
             onChanged: (v) =>
                 state.update((s) => s.diffSurround.wetDryMix = v.round()),
           ),
@@ -131,6 +133,7 @@ class SpatialPage extends StatelessWidget {
             max: 20000,
             divisions: 4000,
             valueFormatter: (v) => v.round() == 0 ? 'Off' : '${v.round()} Hz',
+            unit: 'Hz',
             onChanged: (v) =>
                 state.update((s) => s.diffSurround.lpCutoff = v.round()),
           ),
@@ -203,6 +206,7 @@ class SpatialPage extends StatelessWidget {
             max: 100,
             divisions: 100,
             valueFormatter: (v) => '${v.round()}%',
+            unit: '%',
             onChanged: (v) => state.update((s) => s.reverb.wet = v.round()),
           ),
           LabeledSlider(
@@ -212,6 +216,7 @@ class SpatialPage extends StatelessWidget {
             max: 100,
             divisions: 100,
             valueFormatter: (v) => '${v.round()}%',
+            unit: '%',
             onChanged: (v) => state.update((s) => s.reverb.dry = v.round()),
           ),
         ],
@@ -235,6 +240,7 @@ class SpatialPage extends StatelessWidget {
             max: 200,
             divisions: 200,
             valueFormatter: (v) => '${v.round()}%',
+            unit: '%',
             onChanged: (v) =>
                 state.update((s) => s.stereoImager.lowWidth = v.round()),
           ),
@@ -245,6 +251,7 @@ class SpatialPage extends StatelessWidget {
             max: 200,
             divisions: 200,
             valueFormatter: (v) => '${v.round()}%',
+            unit: '%',
             onChanged: (v) =>
                 state.update((s) => s.stereoImager.midWidth = v.round()),
           ),
@@ -255,6 +262,7 @@ class SpatialPage extends StatelessWidget {
             max: 200,
             divisions: 200,
             valueFormatter: (v) => '${v.round()}%',
+            unit: '%',
             onChanged: (v) =>
                 state.update((s) => s.stereoImager.highWidth = v.round()),
           ),
@@ -265,6 +273,7 @@ class SpatialPage extends StatelessWidget {
             max: 400,
             divisions: 64,
             valueFormatter: (v) => '${v.round()} Hz',
+            unit: 'Hz',
             onChanged: (v) =>
                 state.update((s) => s.stereoImager.lowCrossover = v.round()),
           ),
@@ -275,6 +284,7 @@ class SpatialPage extends StatelessWidget {
             max: 8000,
             divisions: 1200,
             valueFormatter: (v) => '${v.round()} Hz',
+            unit: 'Hz',
             onChanged: (v) =>
                 state.update((s) => s.stereoImager.highCrossover = v.round()),
           ),

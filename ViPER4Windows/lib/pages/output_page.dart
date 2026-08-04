@@ -7,6 +7,9 @@ import 'package:viper4windows/models/viper_state.dart';
 import 'package:viper4windows/theme/app_colors.dart';
 import 'package:viper4windows/widgets/labeled_slider.dart';
 
+double _rawToDb(double raw) => raw > 0 ? 20.0 * log(raw / 100.0) / ln10 : -99.9;
+double _dbToRaw(double db) => (pow(10, db / 20.0) * 100).roundToDouble();
+
 class OutputPage extends StatelessWidget {
   const OutputPage({super.key});
 
@@ -57,6 +60,10 @@ class OutputPage extends StatelessWidget {
                 final dB = pct > 0 ? 20.0 * log(pct / 100.0) / ln10 : -99.9;
                 return '${dB.toStringAsFixed(1)}dB';
               },
+              toDisplay: _rawToDb,
+              fromDisplay: _dbToRaw,
+              unit: 'dB',
+              decimals: 1,
               onChanged: (v) => state.update((s) => s.out.volume = v.round()),
             ),
             LabeledSlider(
@@ -85,6 +92,10 @@ class OutputPage extends StatelessWidget {
                 final dB = pct > 0 ? 20.0 * log(pct / 100.0) / ln10 : -99.9;
                 return '${dB.toStringAsFixed(1)}dB';
               },
+              toDisplay: _rawToDb,
+              fromDisplay: _dbToRaw,
+              unit: 'dB',
+              decimals: 1,
               onChanged: (v) => state.update((s) => s.out.limiter = v.round()),
             ),
           ],
