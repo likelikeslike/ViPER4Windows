@@ -65,20 +65,30 @@ class _Shell extends StatefulWidget {
 class _ShellState extends State<_Shell> with WindowListener {
   int _selectedIndex = 0;
   final SystemTray _systemTray = SystemTray();
+  bool _trayReady = false;
+  Locale? _trayLocale;
+  bool _trayBusy = false;
 
   @override
   void initState() {
     super.initState();
     windowManager.addListener(this);
     windowManager.setPreventClose(true);
-    _initTray();
     _log.info('Shell initialized');
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _updateTrayMenu();
+    final locale = Localizations.localeOf(context);
+    if (!_trayReady) {
+      _trayReady = true;
+      _trayLocale = locale;
+      _initTray();
+    } else if (locale != _trayLocale) {
+      _trayLocale = locale;
+      _updateTrayMenu();
+    }
   }
 
   @override
@@ -141,41 +151,55 @@ class _ShellState extends State<_Shell> with WindowListener {
       toolTip: 'ViPER4Windows',
     );
 
+    await _updateTrayMenu();
+
     _systemTray.registerSystemTrayEventHandler((eventName) async {
       if (eventName == kSystemTrayEventClick ||
           eventName == kSystemTrayEventDoubleClick) {
         _restoreWindow();
       } else if (eventName == kSystemTrayEventRightClick) {
-        _systemTray.popUpContextMenu();
+        if (_trayBusy) return;
+        _trayBusy = true;
+        try {
+          await _systemTray.popUpContextMenu();
+        } finally {
+          _trayBusy = false;
+        }
       }
     });
   }
 
   Future<void> _updateTrayMenu() async {
-    final l = S.of(context);
-    if (l == null) return;
-    final menu = Menu();
-    await menu.buildFrom([
-      MenuItemLabel(
-        label: l.trayShow,
-        onClicked: (_) async {
-          await _restoreWindow();
-        },
-      ),
-      MenuSeparator(),
-      MenuItemLabel(
-        label: l.trayQuit,
-        onClicked: (_) async {
-          _log.info('Quit requested');
-          FileLogger.shared.flush();
-          context.read<ViperState>().saveIfDirty();
-          await _systemTray.destroy();
-          await windowManager.setPreventClose(false);
-          await windowManager.destroy();
-        },
-      ),
-    ]);
-    await _systemTray.setContextMenu(menu);
+    if (!mounted || _trayBusy) return;
+    _trayBusy = true;
+    try {
+      final l = S.of(context);
+      if (l == null) return;
+      final menu = Menu();
+      await menu.buildFrom([
+        MenuItemLabel(
+          label: l.trayShow,
+          onClicked: (_) async {
+            await _restoreWindow();
+          },
+        ),
+        MenuSeparator(),
+        MenuItemLabel(
+          label: l.trayQuit,
+          onClicked: (_) async {
+            _log.info('Quit requested');
+            FileLogger.shared.flush();
+            context.read<ViperState>().saveIfDirty();
+            await _systemTray.destroy();
+            await windowManager.setPreventClose(false);
+            await windowManager.destroy();
+          },
+        ),
+      ]);
+      await _systemTray.setContextMenu(menu);
+    } finally {
+      _trayBusy = false;
+    }
   }
 
   @override
