@@ -30,6 +30,109 @@ class _DevicesPageState extends State<DevicesPage> {
         '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }
 
+  void _confirmDeviceDelete(
+    ViperState state,
+    S l,
+    String deviceId,
+    String deviceName,
+  ) {
+    showDialog(
+      context: context,
+      builder: (ctx) => ContentDialog(
+        constraints: const BoxConstraints(maxWidth: 360, maxHeight: 200),
+        title: Text(l.presetDeleteTitle),
+        content: Text(l.presetDeleteConfirm(deviceName)),
+        actions: [
+          Button(child: Text(l.cancel), onPressed: () => Navigator.pop(ctx)),
+          FilledButton(
+            style: ButtonStyle(
+              backgroundColor: WidgetStateProperty.all(const Color(0xFFCF6679)),
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              state.deleteDevice(deviceId);
+            },
+            child: Text(l.delete),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDeviceUpdate(
+    ViperState state,
+    S l,
+    String deviceId,
+    String deviceName,
+  ) {
+    showDialog(
+      context: context,
+      builder: (ctx) => ContentDialog(
+        constraints: const BoxConstraints(maxWidth: 360, maxHeight: 200),
+        title: Text(l.presetUpdateTitle),
+        content: Text(l.presetUpdateConfirm(deviceName)),
+        actions: [
+          Button(child: Text(l.cancel), onPressed: () => Navigator.pop(ctx)),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              state.saveDevicePreset(deviceId);
+              displayInfoBar(
+                context,
+                builder: (ctx, close) => InfoBar(
+                  title: Text('${l.update}: $deviceName'),
+                  severity: InfoBarSeverity.success,
+                  action: IconButton(
+                    icon: const Icon(FluentIcons.clear),
+                    onPressed: close,
+                  ),
+                ),
+              );
+            },
+            child: Text(l.update),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDeviceLoad(
+    ViperState state,
+    S l,
+    String deviceId,
+    String deviceName,
+  ) {
+    showDialog(
+      context: context,
+      builder: (ctx) => ContentDialog(
+        constraints: const BoxConstraints(maxWidth: 360, maxHeight: 200),
+        title: Text(l.presetLoadTitle),
+        content: Text(l.presetLoadConfirm(deviceName)),
+        actions: [
+          Button(child: Text(l.cancel), onPressed: () => Navigator.pop(ctx)),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              state.loadDevicePreset(deviceId);
+              displayInfoBar(
+                context,
+                builder: (ctx, close) => InfoBar(
+                  title: Text('${l.load}: $deviceName'),
+                  severity: InfoBarSeverity.success,
+                  action: IconButton(
+                    icon: const Icon(FluentIcons.clear),
+                    onPressed: close,
+                  ),
+                ),
+              );
+            },
+            child: Text(l.load),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showRenameDialog(
     ViperState state,
     String deviceId,
@@ -188,39 +291,16 @@ class _DevicesPageState extends State<DevicesPage> {
                   _actionButton(
                     icon: FluentIcons.download,
                     label: l.load,
-                    onPressed: () {
-                      state.loadDevicePreset(deviceId);
-                      displayInfoBar(
-                        context,
-                        builder: (ctx, close) => InfoBar(
-                          title: Text('${l.load}: $deviceName'),
-                          severity: InfoBarSeverity.success,
-                          action: IconButton(
-                            icon: const Icon(FluentIcons.clear),
-                            onPressed: close,
-                          ),
-                        ),
-                      );
-                    },
+                    onPressed: () =>
+                        _confirmDeviceLoad(state, l, deviceId, deviceName),
                   ),
                   const SizedBox(width: 16),
                   _actionButton(
                     icon: FluentIcons.sync,
                     label: l.update,
-                    onPressed: () {
-                      state.saveDevicePreset(deviceId);
-                      displayInfoBar(
-                        context,
-                        builder: (ctx, close) => InfoBar(
-                          title: Text('${l.update}: $deviceName'),
-                          severity: InfoBarSeverity.success,
-                          action: IconButton(
-                            icon: const Icon(FluentIcons.clear),
-                            onPressed: close,
-                          ),
-                        ),
-                      );
-                    },
+                    color: const Color(0xFFB794F6),
+                    onPressed: () =>
+                        _confirmDeviceUpdate(state, l, deviceId, deviceName),
                   ),
                   const SizedBox(width: 16),
                   _actionButton(
@@ -235,9 +315,12 @@ class _DevicesPageState extends State<DevicesPage> {
                     label: l.delete,
                     onPressed: (isActive || isBuiltIn)
                         ? null
-                        : () {
-                            state.deleteDevice(deviceId);
-                          },
+                        : () => _confirmDeviceDelete(
+                            state,
+                            l,
+                            deviceId,
+                            deviceName,
+                          ),
                   ),
                 ],
               ),
@@ -252,8 +335,14 @@ class _DevicesPageState extends State<DevicesPage> {
     required IconData icon,
     required String label,
     VoidCallback? onPressed,
+    Color? color,
   }) {
     final enabled = onPressed != null;
+    final activeColor =
+        color ??
+        (icon == FluentIcons.delete
+            ? const Color(0xFFCF6679)
+            : AppColors.accent);
     return GestureDetector(
       onTap: onPressed,
       child: MouseRegion(
@@ -264,9 +353,7 @@ class _DevicesPageState extends State<DevicesPage> {
             Icon(
               icon,
               size: 14,
-              color: icon == FluentIcons.delete
-                  ? (enabled ? const Color(0xFFCF6679) : AppColors.disabledText)
-                  : (enabled ? AppColors.accent : AppColors.disabledText),
+              color: enabled ? activeColor : AppColors.disabledText,
             ),
             const SizedBox(width: 4),
             Text(
