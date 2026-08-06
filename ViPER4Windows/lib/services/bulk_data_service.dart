@@ -78,7 +78,7 @@ const _bulkConvolverRegionSize = 2 * 1024 * 1024;
 
 const _bulkSeqOffset = 8;
 
-const _v4wMagic = 0x57344D53;
+const _v4wMagic = 0x534D3456;
 const _v4wFormatVersion = 2;
 
 const _bulkCmdDdc = 1;

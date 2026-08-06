@@ -2024,7 +2024,6 @@ class ViperState extends ChangeNotifier {
     _suppressPush = false;
     _ensureDeviceEntry(_currentDeviceId, _isCurrentDeviceHeadphone);
     _loadDeviceSettings(_currentDeviceId, _isCurrentDeviceHeadphone);
-    _reloadActiveFiles();
     notifyListeners();
     _log.info('Settings restored');
   }
@@ -2051,6 +2050,7 @@ class ViperState extends ChangeNotifier {
       _ensureDeviceEntry(deviceId, isHeadphone);
     }
     pushParams();
+    _reloadActiveFiles();
     _scheduleSave();
   }
 
