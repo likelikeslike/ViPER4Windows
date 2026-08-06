@@ -284,7 +284,7 @@ class _PresetPageState extends State<PresetPage> {
       child: Row(
         children: [
           Icon(
-            FluentIcons.file_template,
+            FluentIcons.text_document_edit,
             size: 14,
             color: AppColors.subtitleText,
           ),
@@ -319,7 +319,7 @@ class _PresetPageState extends State<PresetPage> {
           ),
           const SizedBox(width: 4),
           IconButton(
-            icon: Icon(FluentIcons.play, size: 14, color: AppColors.accent),
+            icon: Icon(FluentIcons.download, size: 14, color: AppColors.accent),
             onPressed: () => _confirmLoad(state, l, name),
           ),
           const SizedBox(width: 4),

@@ -290,24 +290,24 @@ class _ShellState extends State<_Shell> with WindowListener {
             body: const TonePage(),
           ),
           PaneItem(
-            icon: Icon(FluentIcons.headset, size: 16.0),
+            icon: Icon(FluentIcons.communications, size: 16.0),
             title: Text(l.navSpatial),
             body: const SpatialPage(),
           ),
           PaneItem(
-            icon: Icon(FluentIcons.heart, size: 16.0),
+            icon: Icon(FluentIcons.charticulator_linking_sequence, size: 16.0),
             title: Text(l.navDynamics),
             body: const DynamicsPage(),
           ),
         ],
         footerItems: [
           PaneItem(
-            icon: Icon(FluentIcons.devices4, size: 16.0),
+            icon: Icon(FluentIcons.speakers, size: 16.0),
             title: Text(l.navDevices),
             body: const DevicesPage(),
           ),
           PaneItem(
-            icon: Icon(FluentIcons.save_template, size: 16.0),
+            icon: Icon(FluentIcons.documentation, size: 16.0),
             title: Text(l.navPresets),
             body: const PresetPage(),
           ),
