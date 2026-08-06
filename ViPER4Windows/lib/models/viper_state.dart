@@ -1881,6 +1881,14 @@ class ViperState extends ChangeNotifier {
     refreshFileLists();
   }
 
+  Map<String, dynamic>? deviceSettings(String deviceId) =>
+      DeviceSettingsManager.loadDevice(deviceId);
+
+  void deleteDeviceSettings(String deviceId) {
+    DeviceSettingsManager.deleteDevice(deviceId);
+    notifyListeners();
+  }
+
   void renamePreset(String oldName, String newName) {
     _fileManager.renameFile(
       '$oldName.json',

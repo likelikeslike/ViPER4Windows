@@ -8,6 +8,7 @@ project(runner LANGUAGES CXX)
 # Any new source files that you add to the application should be added here.
 add_executable(${BINARY_NAME} WIN32
   "apo_registry.cpp"
+  "cli_client.cpp"
   "flutter_window.cpp"
   "main.cpp"
   "utils.cpp"
@@ -42,3 +43,17 @@ set_target_properties(${BINARY_NAME} PROPERTIES LINK_FLAGS "/MANIFESTUAC:\"level
 
 # Run the Flutter tool portions of the build. This must not be removed.
 add_dependencies(${BINARY_NAME} flutter_assemble)
+
+# Console-subsystem CLI companion
+add_executable(viper4windows_cli
+  "cli_client.cpp"
+  "cli_main.cpp"
+)
+apply_standard_settings(viper4windows_cli)
+target_compile_definitions(viper4windows_cli PRIVATE "NOMINMAX")
+target_link_libraries(viper4windows_cli PRIVATE "advapi32.lib")
+target_include_directories(viper4windows_cli PRIVATE "${CMAKE_SOURCE_DIR}")
+set_target_properties(viper4windows_cli PROPERTIES
+  OUTPUT_NAME "v4w-cli"
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/runner/$<CONFIG>"
+)

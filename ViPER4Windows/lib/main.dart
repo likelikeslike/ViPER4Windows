@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ffi' hide Size;
 import 'dart:io';
 
@@ -7,6 +8,8 @@ import 'package:provider/provider.dart';
 import 'package:viper4windows/app.dart';
 import 'package:viper4windows/models/viper_state.dart';
 import 'package:viper4windows/services/apo_registration_service.dart';
+import 'package:viper4windows/services/control_dispatch.dart';
+import 'package:viper4windows/services/control_pipe_server.dart';
 import 'package:viper4windows/services/file_logger.dart';
 import 'package:viper4windows/services/settings_service.dart';
 import 'package:viper4windows/services/shared_memory_service.dart';
@@ -81,6 +84,10 @@ void main(List<String> args) async {
   _log.info('Settings loaded, launching UI');
 
   ApoRegistrationService().ensureProtectedAudioDGDisabled();
+
+  final dispatch = ControlDispatch(viperState);
+  final pipeServer = ControlPipeServer(dispatch.dispatch);
+  unawaited(pipeServer.start());
 
   runApp(
     ChangeNotifierProvider<ViperState>(

@@ -26,15 +26,18 @@ AppMutex=Global\ViPER4Windows_SingleInstance
 CloseApplications=force
 RestartApplications=no
 AlwaysRestart=yes
+ChangesEnvironment=yes
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+Name: "addtopath"; Description: "Add v4w-cli to PATH (control ViPER4Windows from the command line)"; GroupDescription: "Command line"
 
 [Files]
 Source: "..\ViPER4Windows\build\windows\x64\runner\Release\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\ViPER4Windows\build\windows\x64\runner\Release\v4w-cli.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\ViPER4Windows\build\windows\x64\runner\Release\flutter_windows.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\ViPER4Windows\build\windows\x64\runner\Release\screen_retriever_windows_plugin.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\ViPER4Windows\build\windows\x64\runner\Release\system_tray_plugin.dll"; DestDir: "{app}"; Flags: ignoreversion
@@ -46,6 +49,11 @@ Source: "..\ViPER4WindowsAPO\build\Release\ViPER4WindowsAPO.dll"; DestDir: "{app
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
+[Registry]
+Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; \
+  ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}"; \
+  Tasks: addtopath; Check: NeedsAddPath('{app}')
+
 [Run]
 Filename: "{sys}\shutdown.exe"; Parameters: "/r /t 10 /c ""ViPER4Windows has been installed. Rebooting in 10 seconds to load the audio driver."""; Description: "Reboot now (required for audio driver)"; Flags: postinstall skipifsilent nowait
 
@@ -55,6 +63,20 @@ FinishedLabel=Setup has finished installing [name] on your computer.%n%nA reboot
 [Code]
 const
   ViperClsid = '{B5A2C3D4-E6F7-4A8B-9C0D-1E2F3A4B5C6D}';
+
+function NeedsAddPath(Param: String): Boolean;
+var
+  OrigPath: String;
+begin
+  if not RegQueryStringValue(HKLM,
+    'SYSTEM\CurrentControlSet\Control\Session Manager\Environment',
+    'Path', OrigPath) then
+  begin
+    Result := True;
+    exit;
+  end;
+  Result := Pos(';' + Uppercase(Param) + ';', ';' + Uppercase(OrigPath) + ';') = 0;
+end;
 
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 var
