@@ -148,7 +148,12 @@ class SharedMemoryService {
 
     final paramsName = _paramsShmName.toNativeUtf16();
     _hParamsMap = _createFileMapping(
-      _invalidHandle, saPtr, _pageReadWrite, 0, _paramsShmSize, paramsName,
+      _invalidHandle,
+      saPtr,
+      _pageReadWrite,
+      0,
+      _paramsShmSize,
+      paramsName,
     );
     calloc.free(paramsName);
     if (_hParamsMap == 0) {
@@ -157,7 +162,11 @@ class SharedMemoryService {
       return;
     }
     _pParamsView = _mapViewOfFile(
-      _hParamsMap, _fileMapReadWrite, 0, 0, _paramsShmSize,
+      _hParamsMap,
+      _fileMapReadWrite,
+      0,
+      0,
+      _paramsShmSize,
     );
     if (_pParamsView == null || _pParamsView == nullptr) {
       _log.error('MapViewOfFile failed for params shm');
@@ -170,12 +179,21 @@ class SharedMemoryService {
 
     final statusName = _statusShmName.toNativeUtf16();
     _hStatusMap = _createFileMapping(
-      _invalidHandle, saPtr, _pageReadWrite, 0, _statusShmSize, statusName,
+      _invalidHandle,
+      saPtr,
+      _pageReadWrite,
+      0,
+      _statusShmSize,
+      statusName,
     );
     calloc.free(statusName);
     if (_hStatusMap != 0) {
       _pStatusView = _mapViewOfFile(
-        _hStatusMap, _fileMapReadWrite, 0, 0, _statusShmSize,
+        _hStatusMap,
+        _fileMapReadWrite,
+        0,
+        0,
+        _statusShmSize,
       );
     }
 
@@ -252,10 +270,14 @@ class SharedMemoryService {
     final sampleRate = _readUint32(bytes, _statusSampleRate);
     final processedFrames = _readUint64(bytes, _statusProcessedFrames);
     final version = _readNullTerminatedString(
-      bytes, _statusVersionName, _statusVersionNameLen,
+      bytes,
+      _statusVersionName,
+      _statusVersionNameLen,
     );
     final arch = _readNullTerminatedString(
-      bytes, _statusArchString, _statusArchStringLen,
+      bytes,
+      _statusArchString,
+      _statusArchStringLen,
     );
     return (
       sampleRate: sampleRate,
@@ -282,7 +304,10 @@ class SharedMemoryService {
   }
 
   static String _readNullTerminatedString(
-    Pointer<Uint8> bytes, int offset, int maxLen) {
+    Pointer<Uint8> bytes,
+    int offset,
+    int maxLen,
+  ) {
     final out = <int>[];
     for (var i = 0; i < maxLen; i++) {
       final b = bytes[offset + i];

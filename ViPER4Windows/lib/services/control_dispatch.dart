@@ -22,7 +22,9 @@ class ControlDispatch {
   }
 
   List<String> _preset(List<String> a) {
-    if (a.isEmpty) return const ['ERR usage: preset <list|load|save|delete|rename|import>'];
+    if (a.isEmpty) {
+      return const ['ERR usage: preset <list|load|save|delete|rename|import>'];
+    }
     switch (a.first) {
       case 'list':
         state.refreshFileLists();
@@ -32,7 +34,9 @@ class ControlDispatch {
       case 'load':
         if (a.length < 2) return const ['ERR usage: preset load <name>'];
         final rc = state.loadPreset(a[1]);
-        return rc == 0 ? ['OK loaded preset ${a[1]}'] : ['ERR preset not found or invalid: ${a[1]}'];
+        return rc == 0
+            ? ['OK loaded preset ${a[1]}']
+            : ['ERR preset not found or invalid: ${a[1]}'];
       case 'save':
         if (a.length < 2) return const ['ERR usage: preset save <name>'];
         state.savePreset(a[1]);
@@ -54,7 +58,9 @@ class ControlDispatch {
       case 'import':
         if (a.length < 2) return const ['ERR usage: preset import <path>'];
         final name = state.importPreset(a[1]);
-        return name == null ? ['ERR import failed: ${a[1]}'] : ['OK imported preset $name'];
+        return name == null
+            ? ['ERR import failed: ${a[1]}']
+            : ['OK imported preset $name'];
       default:
         return ['ERR unknown preset command: ${a.first}'];
     }
@@ -78,7 +84,8 @@ class ControlDispatch {
   }
 
   List<String> _device(List<String> a) {
-    if (a.isEmpty) return const ['ERR usage: device <current|list|show|delete>'];
+    if (a.isEmpty)
+      return const ['ERR usage: device <current|list|show|delete>'];
     switch (a.first) {
       case 'current':
         return [

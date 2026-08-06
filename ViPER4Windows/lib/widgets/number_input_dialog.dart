@@ -106,10 +106,7 @@ class _NumberInputDialogState extends State<NumberInputDialog> {
           const SizedBox(height: 8),
           Text(
             rangeHint,
-            style: TextStyle(
-              fontSize: 12,
-              color: AppColors.subtitleText,
-            ),
+            style: TextStyle(fontSize: 12, color: AppColors.subtitleText),
           ),
         ],
       ),
