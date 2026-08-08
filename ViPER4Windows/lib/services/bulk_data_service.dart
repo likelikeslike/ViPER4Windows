@@ -265,6 +265,29 @@ class BulkDataService {
     _log.info('DDC sent: $sectionCount sections (${ok ? "ok" : "failed"})');
   }
 
+  void unloadConvolverKernel() {
+    final ok = _sendBulk(
+      _bulkConvolverBase,
+      _bulkConvolverRegionSize,
+      ++_convolverSeq,
+      _bulkCmdConvolverKernel,
+      Uint8List(0),
+    );
+    _log.info('Convolver unloaded (${ok ? "ok" : "failed"})');
+  }
+
+  void clearDdc() {
+    final ok = _sendBulk(
+      _bulkDdcBase,
+      _bulkDdcRegionSize,
+      ++_ddcSeq,
+      _bulkCmdDdc,
+      Uint8List(0),
+      arg1: 0,
+    );
+    _log.info('DDC cleared (${ok ? "ok" : "failed"})');
+  }
+
   void loadConvolverKernel(Uint8List wavData, String fileName) {
     final result = _decodeWavToFloat(wavData);
     if (result == null) {

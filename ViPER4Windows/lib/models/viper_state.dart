@@ -1828,7 +1828,7 @@ class ViperState extends ChangeNotifier {
     _fileManager.deleteFile(name, ProfileFileType.ddc);
     if (_active.ddc.device == name) {
       update((s) => s.ddc.device = '');
-      setDdcEnabled(false);
+      if (_active.ddc.enable) _bulk.clearDdc();
     }
     refreshFileLists();
   }
@@ -1837,9 +1837,21 @@ class ViperState extends ChangeNotifier {
     _fileManager.deleteFile(name, ProfileFileType.kernel);
     if (_active.convolver.kernel == name) {
       update((s) => s.convolver.kernel = '');
-      setConvolverEnabled(false);
+      if (_active.convolver.enable) _bulk.unloadConvolverKernel();
     }
     refreshFileLists();
+  }
+
+  void clearDdcSelection() {
+    if (_active.ddc.device.isEmpty) return;
+    update((s) => s.ddc.device = '');
+    if (_active.ddc.enable) _bulk.clearDdc();
+  }
+
+  void clearKernelSelection() {
+    if (_active.convolver.kernel.isEmpty) return;
+    update((s) => s.convolver.kernel = '');
+    if (_active.convolver.enable) _bulk.unloadConvolverKernel();
   }
 
   void savePreset(String name) {

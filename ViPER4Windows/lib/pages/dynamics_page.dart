@@ -785,8 +785,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
                       ? state.active.ddc.device
                       : '',
                   items: [
-                    if (state.ddcFiles.isEmpty)
-                      ComboBoxItem<String>(value: '', child: Text(l.none)),
+                    ComboBoxItem<String>(value: '', child: Text(l.none)),
                     ...state.ddcFiles.map(
                       (name) =>
                           ComboBoxItem<String>(value: name, child: Text(name)),
@@ -795,8 +794,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
                   onChanged: (name) {
                     if (name == null) return;
                     if (name.isEmpty) {
-                      state.update((s) => s.ddc.device = '');
-                      state.setDdcEnabled(false);
+                      state.clearDdcSelection();
                     } else {
                       state.loadDdcByName(name);
                     }
@@ -862,8 +860,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
                       ? state.active.convolver.kernel
                       : '',
                   items: [
-                    if (state.kernelFiles.isEmpty)
-                      ComboBoxItem<String>(value: '', child: Text(l.none)),
+                    ComboBoxItem<String>(value: '', child: Text(l.none)),
                     ...state.kernelFiles.map(
                       (name) =>
                           ComboBoxItem<String>(value: name, child: Text(name)),
@@ -872,8 +869,7 @@ class _DynamicsPageState extends State<DynamicsPage> {
                   onChanged: (name) {
                     if (name == null) return;
                     if (name.isEmpty) {
-                      state.update((s) => s.convolver.kernel = '');
-                      state.setConvolverEnabled(false);
+                      state.clearKernelSelection();
                     } else {
                       state.loadKernelByName(name);
                     }

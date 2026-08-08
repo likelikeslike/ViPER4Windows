@@ -255,8 +255,7 @@ class SharedParamsSerializer {
 
     // Convolver
     final conv = ViperParamsLayout.convolver;
-    final convEffective = s.convolver.enable && s.convolver.kernel.isNotEmpty;
-    data.setUint8(conv + ConvolverLayout.enable, convEffective ? 1 : 0);
+    data.setUint8(conv + ConvolverLayout.enable, s.convolver.enable ? 1 : 0);
     data.setFloat32(
       conv + ConvolverLayout.crossChannel,
       s.convolver.crossChannel / 100.0,
@@ -265,8 +264,7 @@ class SharedParamsSerializer {
 
     // DDC
     final ddc = ViperParamsLayout.ddc;
-    final ddcEffective = s.ddc.enable && s.ddc.device.isNotEmpty;
-    data.setUint8(ddc + DdcLayout.enable, ddcEffective ? 1 : 0);
+    data.setUint8(ddc + DdcLayout.enable, s.ddc.enable ? 1 : 0);
 
     // Field Surround
     final fs = ViperParamsLayout.fieldSurround;

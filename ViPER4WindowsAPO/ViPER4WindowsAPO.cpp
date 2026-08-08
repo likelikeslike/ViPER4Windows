@@ -777,6 +777,11 @@ void CViPER4WindowsMFX::DispatchBulk(
             const uint32_t frame_count = hdr.arg1;
             const uint32_t channels = hdr.arg2;
             const uint32_t kernel_id = hdr.arg3;
+            if (frame_count == 0) {
+                engine_->UnloadConvolverKernel();
+                ViPERLog("[ViPER] Convolver unload OK");
+                break;
+            }
             const uint32_t expected = frame_count * channels * sizeof(float);
             if (hdr.data_size != expected) {
                 ViPERLog(
