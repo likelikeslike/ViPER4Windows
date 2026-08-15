@@ -1,5 +1,3 @@
-
-#include <chrono>
 #include <cstring>
 
 #include "include/ViPERParams.h"
@@ -7,6 +5,7 @@
 
 #include "ViPER4WindowsAPO.h"
 #include "ViPERLog.h"
+#include <avrt.h>
 
 #define VIPER_STRINGIFY2(x) #x
 #define VIPER_STRINGIFY(x) VIPER_STRINGIFY2(x)
@@ -22,8 +21,6 @@ static constexpr char kArch[] = "x86";
 #else
 static constexpr char kArch[] = "unknown";
 #endif
-
-#define PARAM_FX_TYPE_SWITCH 0x10003
 
 #pragma comment(lib, "advapi32.lib")
 #pragma comment(lib, "avrt.lib")
@@ -42,38 +39,41 @@ const CRegAPOProperties<1> CViPER4WindowsMFX::RegProperties(
 );
 
 CViPER4WindowsMFX::CViPER4WindowsMFX() :
-    CBaseAudioProcessingObject(RegProperties) {
-    ViPERLog("[ViPER] Constructor called (this=%p)\n", this);
-}
+    CBaseAudioProcessingObject(RegProperties) {}
 
 CViPER4WindowsMFX::~CViPER4WindowsMFX() {
-    ViPERLog("[ViPER] Destructor called (this=%p)\n", this);
     StopParamWatch();
+    delete staged_params_.exchange(nullptr, std::memory_order_relaxed);
+    delete consumed_params_.exchange(nullptr, std::memory_order_relaxed);
     CloseSharedMemory();
     ResetChild();
 }
 
 HRESULT CViPER4WindowsMFX::FinalConstruct() {
-    ViPERLog("[ViPER] FinalConstruct called (this=%p)\n", this);
-    mEngine = std::make_unique<ViPER>();
+    engine_ = std::make_unique<ViPER>();
     TryOpenSharedMemory();
     StartParamWatch();
-    ViPERLog("[ViPER] FinalConstruct: engine=%p shm=%p\n", mEngine.get(), mSharedParams);
+    ViPERLog(
+        "[ViPER] FinalConstruct: engine=%p paramsBase=%p statusBase=%p\n",
+        engine_.get(),
+        params_base_,
+        status_base_
+    );
     return S_OK;
 }
 
 void CViPER4WindowsMFX::ResetChild() {
-    if (mChildCfg) {
-        mChildCfg->Release();
-        mChildCfg = nullptr;
+    if (child_cfg_) {
+        child_cfg_->Release();
+        child_cfg_ = nullptr;
     }
-    if (mChildRT) {
-        mChildRT->Release();
-        mChildRT = nullptr;
+    if (child_rt_) {
+        child_rt_->Release();
+        child_rt_ = nullptr;
     }
-    if (mChildAPO) {
-        mChildAPO->Release();
-        mChildAPO = nullptr;
+    if (child_apo_) {
+        child_apo_->Release();
+        child_apo_ = nullptr;
     }
 }
 
@@ -83,79 +83,64 @@ STDMETHODIMP CViPER4WindowsMFX::GetLatency(HNSTIME *pTime) {
     return S_OK;
 }
 
-STDMETHODIMP CViPER4WindowsMFX::Initialize(UINT32 cbDataSize, BYTE *pbyData) {
-    ViPERLog("[ViPER] Initialize called (this=%p), cbDataSize=%u\n", this, cbDataSize);
-    ViPERLog(
-        "[ViPER] sizeof APOInitBaseStruct=%u, APOInitSystemEffects=%u, "
-        "APOInitSystemEffects2=%u\n",
-        (UINT32) sizeof(APOInitBaseStruct),
-        (UINT32) sizeof(APOInitSystemEffects),
-        (UINT32) sizeof(APOInitSystemEffects2)
+STDMETHODIMP CViPER4WindowsMFX::GetRegistrationProperties(APO_REG_PROPERTIES **ppRegProps
+) {
+    return CBaseAudioProcessingObject::GetRegistrationProperties(ppRegProps);
+}
+
+STDMETHODIMP CViPER4WindowsMFX::IsOutputFormatSupported(
+    IAudioMediaType *pOppositeFormat,
+    IAudioMediaType *pRequestedOutputFormat,
+    IAudioMediaType **ppSupportedOutputFormat
+) {
+    HRESULT hr = CBaseAudioProcessingObject::IsOutputFormatSupported(
+        pOppositeFormat, pRequestedOutputFormat, ppSupportedOutputFormat
     );
-
-    if (cbDataSize == 0 && pbyData == nullptr) {
-        ViPERLog("[ViPER] Initialize: null init, calling base with 0/null\n");
-        HRESULT hr = CBaseAudioProcessingObject::Initialize(cbDataSize, pbyData);
-        ViPERLog("[ViPER] Initialize: base returned hr=0x%08X\n", hr);
-        return hr;
+    if (FAILED(hr)) {
+        ViPERLog("[ViPER] IsOutputFormatSupported FAILED hr=0x%08X\n", hr);
     }
+    return hr;
+}
 
+STDMETHODIMP CViPER4WindowsMFX::Reset() {
+    if (engine_) engine_->ResetAllEffects();
+    return CBaseAudioProcessingObject::Reset();
+}
+
+STDMETHODIMP CViPER4WindowsMFX::Initialize(UINT32 cbDataSize, BYTE *pbyData) {
+    if (cbDataSize == 0 && pbyData == nullptr) {
+        return CBaseAudioProcessingObject::Initialize(cbDataSize, pbyData);
+    }
     if (pbyData == nullptr) {
         ViPERLog("[ViPER] Initialize: pbyData is null but cbDataSize=%u\n", cbDataSize);
         return E_POINTER;
     }
 
+    HRESULT hr;
     if (cbDataSize >= sizeof(APOInitSystemEffects2)) {
-        APOInitSystemEffects2 *pSysFx2 =
-            reinterpret_cast<APOInitSystemEffects2 *>(pbyData);
-        ViPERLog(
-            "[ViPER] Initialize: got APOInitSystemEffects2, calling base with base "
-            "struct size\n"
+        auto *p = reinterpret_cast<APOInitSystemEffects2 *>(pbyData);
+        hr = CBaseAudioProcessingObject::Initialize(
+            sizeof(APOInitBaseStruct), reinterpret_cast<BYTE *>(&p->APOInit)
         );
-        HRESULT hr = CBaseAudioProcessingObject::Initialize(
-            sizeof(APOInitBaseStruct), reinterpret_cast<BYTE *>(&pSysFx2->APOInit)
-        );
-        if (FAILED(hr)) {
-            ViPERLog("[ViPER] Initialize: base init FAILED hr=0x%08X\n", hr);
-            return hr;
-        }
     } else if (cbDataSize >= sizeof(APOInitSystemEffects)) {
-        APOInitSystemEffects *pSysFx = reinterpret_cast<APOInitSystemEffects *>(pbyData);
-        ViPERLog(
-            "[ViPER] Initialize: got APOInitSystemEffects, calling base with base struct "
-            "size\n"
+        auto *p = reinterpret_cast<APOInitSystemEffects *>(pbyData);
+        hr = CBaseAudioProcessingObject::Initialize(
+            sizeof(APOInitBaseStruct), reinterpret_cast<BYTE *>(&p->APOInit)
         );
-        HRESULT hr = CBaseAudioProcessingObject::Initialize(
-            sizeof(APOInitBaseStruct), reinterpret_cast<BYTE *>(&pSysFx->APOInit)
-        );
-        if (FAILED(hr)) {
-            ViPERLog("[ViPER] Initialize: base init FAILED hr=0x%08X\n", hr);
-            return hr;
-        }
-    } else if (cbDataSize >= sizeof(APOInitBaseStruct)) {
-        ViPERLog("[ViPER] Initialize: got APOInitBaseStruct, passing directly\n");
-        HRESULT hr = CBaseAudioProcessingObject::Initialize(cbDataSize, pbyData);
-        if (FAILED(hr)) {
-            ViPERLog("[ViPER] Initialize: base init FAILED hr=0x%08X\n", hr);
-            return hr;
-        }
     } else {
-        ViPERLog(
-            "[ViPER] Initialize: unknown cbDataSize=%u, trying base anyway\n", cbDataSize
-        );
-        HRESULT hr = CBaseAudioProcessingObject::Initialize(cbDataSize, pbyData);
-        if (FAILED(hr)) {
-            ViPERLog("[ViPER] Initialize: base init FAILED hr=0x%08X\n", hr);
-            return hr;
-        }
+        hr = CBaseAudioProcessingObject::Initialize(cbDataSize, pbyData);
+    }
+    if (FAILED(hr)) {
+        ViPERLog("[ViPER] Initialize FAILED hr=0x%08X cbDataSize=%u\n", hr, cbDataSize);
+        return hr;
     }
 
     ResetChild();
-    mEndpointId[0] = L'\0';
+    endpoint_id_[0] = L'\0';
 
     if (cbDataSize >= sizeof(APOInitSystemEffects2)) {
-        auto *pSysFx2 = reinterpret_cast<APOInitSystemEffects2 *>(pbyData);
-        if (pSysFx2->pAPOEndpointProperties) {
+        auto *p_sys_fx2 = reinterpret_cast<APOInitSystemEffects2 *>(pbyData);
+        if (p_sys_fx2->pAPOEndpointProperties) {
             PROPVARIANT var;
             PropVariantInit(&var);
             PROPERTYKEY pkGuid = {
@@ -165,16 +150,15 @@ STDMETHODIMP CViPER4WindowsMFX::Initialize(UINT32 cbDataSize, BYTE *pbyData) {
                  {0x8c, 0x23, 0xe0, 0xc0, 0xff, 0xee, 0x7f, 0x0e}},
                 4
             };
-            if (SUCCEEDED(pSysFx2->pAPOEndpointProperties->GetValue(pkGuid, &var))
+            if (SUCCEEDED(p_sys_fx2->pAPOEndpointProperties->GetValue(pkGuid, &var))
                 && var.vt == VT_LPWSTR && var.pwszVal) {
-                wcsncpy_s(mEndpointId, var.pwszVal, _TRUNCATE);
-                ViPERLog("[ViPER] Endpoint ID: %ls\n", mEndpointId);
+                wcsncpy_s(endpoint_id_, var.pwszVal, _TRUNCATE);
             }
             PropVariantClear(&var);
         }
     } else if (cbDataSize >= sizeof(APOInitSystemEffects)) {
-        auto *pSysFx = reinterpret_cast<APOInitSystemEffects *>(pbyData);
-        if (pSysFx->pAPOEndpointProperties) {
+        auto *p_sys_fx = reinterpret_cast<APOInitSystemEffects *>(pbyData);
+        if (p_sys_fx->pAPOEndpointProperties) {
             PROPVARIANT var;
             PropVariantInit(&var);
             PROPERTYKEY pkGuid = {
@@ -184,10 +168,9 @@ STDMETHODIMP CViPER4WindowsMFX::Initialize(UINT32 cbDataSize, BYTE *pbyData) {
                  {0x8c, 0x23, 0xe0, 0xc0, 0xff, 0xee, 0x7f, 0x0e}},
                 4
             };
-            if (SUCCEEDED(pSysFx->pAPOEndpointProperties->GetValue(pkGuid, &var))
+            if (SUCCEEDED(p_sys_fx->pAPOEndpointProperties->GetValue(pkGuid, &var))
                 && var.vt == VT_LPWSTR && var.pwszVal) {
-                wcsncpy_s(mEndpointId, var.pwszVal, _TRUNCATE);
-                ViPERLog("[ViPER] Endpoint ID: %ls\n", mEndpointId);
+                wcsncpy_s(endpoint_id_, var.pwszVal, _TRUNCATE);
             }
             PropVariantClear(&var);
         }
@@ -195,37 +178,37 @@ STDMETHODIMP CViPER4WindowsMFX::Initialize(UINT32 cbDataSize, BYTE *pbyData) {
 
     HKEY hKey = nullptr;
     wchar_t childClsidStr[128] = {};
-    DWORD cbData = sizeof(childClsidStr);
+    DWORD cb_data = sizeof(childClsidStr);
     LONG res =
         RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"SOFTWARE\\ViPER4Windows", 0, KEY_READ, &hKey);
     if (res == ERROR_SUCCESS) {
-        if (mEndpointId[0] != L'\0') {
+        if (endpoint_id_[0] != L'\0') {
             wchar_t keyName[128];
-            swprintf_s(keyName, L"OrigCompMFX_%ls", mEndpointId);
+            swprintf_s(keyName, L"OrigCompMFX_%ls", endpoint_id_);
             res = RegQueryValueExW(
                 hKey,
                 keyName,
                 nullptr,
                 nullptr,
                 reinterpret_cast<BYTE *>(childClsidStr),
-                &cbData
+                &cb_data
             );
             if (res != ERROR_SUCCESS || childClsidStr[0] == L'\0') {
-                cbData = sizeof(childClsidStr);
+                cb_data = sizeof(childClsidStr);
                 memset(childClsidStr, 0, sizeof(childClsidStr));
-                swprintf_s(keyName, L"OrigSFX_%ls", mEndpointId);
+                swprintf_s(keyName, L"OrigSFX_%ls", endpoint_id_);
                 res = RegQueryValueExW(
                     hKey,
                     keyName,
                     nullptr,
                     nullptr,
                     reinterpret_cast<BYTE *>(childClsidStr),
-                    &cbData
+                    &cb_data
                 );
             }
         }
         if (res != ERROR_SUCCESS || childClsidStr[0] == L'\0') {
-            cbData = sizeof(childClsidStr);
+            cb_data = sizeof(childClsidStr);
             memset(childClsidStr, 0, sizeof(childClsidStr));
             res = RegQueryValueExW(
                 hKey,
@@ -233,11 +216,11 @@ STDMETHODIMP CViPER4WindowsMFX::Initialize(UINT32 cbDataSize, BYTE *pbyData) {
                 nullptr,
                 nullptr,
                 reinterpret_cast<BYTE *>(childClsidStr),
-                &cbData
+                &cb_data
             );
         }
         if (res != ERROR_SUCCESS || childClsidStr[0] == L'\0') {
-            cbData = sizeof(childClsidStr);
+            cb_data = sizeof(childClsidStr);
             memset(childClsidStr, 0, sizeof(childClsidStr));
             res = RegQueryValueExW(
                 hKey,
@@ -245,61 +228,55 @@ STDMETHODIMP CViPER4WindowsMFX::Initialize(UINT32 cbDataSize, BYTE *pbyData) {
                 nullptr,
                 nullptr,
                 reinterpret_cast<BYTE *>(childClsidStr),
-                &cbData
+                &cb_data
             );
         }
         RegCloseKey(hKey);
     }
 
     if (res == ERROR_SUCCESS && childClsidStr[0] != L'\0') {
-        ViPERLog("[ViPER] Child APO CLSID from registry: %ls\n", childClsidStr);
         GUID childGuid;
-        HRESULT hrChild = CLSIDFromString(childClsidStr, &childGuid);
-        if (SUCCEEDED(hrChild)) {
-            hrChild = CoCreateInstance(
+        HRESULT hr_child = CLSIDFromString(childClsidStr, &childGuid);
+        if (SUCCEEDED(hr_child)) {
+            hr_child = CoCreateInstance(
                 childGuid,
                 nullptr,
                 CLSCTX_INPROC_SERVER,
                 __uuidof(IAudioProcessingObject),
-                reinterpret_cast<void **>(&mChildAPO)
+                reinterpret_cast<void **>(&child_apo_)
             );
-            if (SUCCEEDED(hrChild)) {
-                hrChild = mChildAPO->QueryInterface(
+            if (SUCCEEDED(hr_child)) {
+                hr_child = child_apo_->QueryInterface(
                     __uuidof(IAudioProcessingObjectRT),
-                    reinterpret_cast<void **>(&mChildRT)
+                    reinterpret_cast<void **>(&child_rt_)
                 );
-                if (FAILED(hrChild)) {
-                    ViPERLog("[ViPER] Child QI for RT failed hr=0x%08X\n", hrChild);
+                if (FAILED(hr_child)) {
+                    ViPERLog("[ViPER] Child QI for RT failed hr=0x%08X\n", hr_child);
                     ResetChild();
                 }
             }
-            if (mChildAPO) {
-                hrChild = mChildAPO->QueryInterface(
+            if (child_apo_) {
+                hr_child = child_apo_->QueryInterface(
                     __uuidof(IAudioProcessingObjectConfiguration),
-                    reinterpret_cast<void **>(&mChildCfg)
+                    reinterpret_cast<void **>(&child_cfg_)
                 );
-                if (FAILED(hrChild)) {
-                    ViPERLog("[ViPER] Child QI for Config failed hr=0x%08X\n", hrChild);
+                if (FAILED(hr_child)) {
+                    ViPERLog("[ViPER] Child QI for Config failed hr=0x%08X\n", hr_child);
                     ResetChild();
                 }
             }
-            if (mChildAPO) {
-                hrChild = mChildAPO->Initialize(cbDataSize, pbyData);
-                if (FAILED(hrChild)) {
-                    ViPERLog("[ViPER] Child Initialize failed hr=0x%08X\n", hrChild);
+            if (child_apo_) {
+                hr_child = child_apo_->Initialize(cbDataSize, pbyData);
+                if (FAILED(hr_child)) {
+                    ViPERLog("[ViPER] Child Initialize failed hr=0x%08X\n", hr_child);
                     ResetChild();
-                } else {
-                    ViPERLog("[ViPER] Child APO created and initialized OK\n");
                 }
             }
         } else {
-            ViPERLog("[ViPER] CLSIDFromString failed for child hr=0x%08X\n", hrChild);
+            ViPERLog("[ViPER] CLSIDFromString failed for child hr=0x%08X\n", hr_child);
         }
-    } else {
-        ViPERLog("[ViPER] No child APO CLSID found in registry (res=%ld)\n", res);
     }
 
-    ViPERLog("[ViPER] Initialize: SUCCESS (child=%p)\n", mChildAPO);
     return S_OK;
 }
 
@@ -310,35 +287,19 @@ STDMETHODIMP CViPER4WindowsMFX::IsInputFormatSupported(
 ) {
     if (!pRequestedInputFormat || !ppSupportedInputFormat) return E_POINTER;
 
-    UNCOMPRESSEDAUDIOFORMAT format;
-    HRESULT hr = pRequestedInputFormat->GetUncompressedAudioFormat(&format);
-    if (SUCCEEDED(hr)) {
-        ViPERLog(
-            "[ViPER] IsInputFormatSupported (this=%p): type=%08X channels=%u bps=%u "
-            "container=%u rate=%.0f\n",
-            this,
-            format.guidFormatType.Data1,
-            format.dwSamplesPerFrame,
-            format.dwValidBitsPerSample,
-            format.dwBytesPerSampleContainer,
-            format.fFramesPerSecond
-        );
-    }
-
-    if (mChildAPO) {
-        hr = mChildAPO->IsInputFormatSupported(
+    HRESULT hr;
+    if (child_apo_) {
+        hr = child_apo_->IsInputFormatSupported(
             pOppositeFormat, pRequestedInputFormat, ppSupportedInputFormat
         );
-        ViPERLog("[ViPER] IsInputFormatSupported: child returned hr=0x%08X\n", hr);
         if (SUCCEEDED(hr)) return hr;
     }
-
     hr = CBaseAudioProcessingObject::IsInputFormatSupported(
         pOppositeFormat, pRequestedInputFormat, ppSupportedInputFormat
     );
-    ViPERLog(
-        "[ViPER] IsInputFormatSupported (this=%p): base returned hr=0x%08X\n", this, hr
-    );
+    if (FAILED(hr)) {
+        ViPERLog("[ViPER] IsInputFormatSupported FAILED hr=0x%08X\n", hr);
+    }
     return hr;
 }
 
@@ -355,14 +316,14 @@ STDMETHODIMP CViPER4WindowsMFX::LockForProcess(
         u32NumOutputConnections
     );
 
-    if (mChildCfg) {
-        HRESULT hrChild = mChildCfg->LockForProcess(
+    if (child_cfg_) {
+        HRESULT hr_child = child_cfg_->LockForProcess(
             u32NumInputConnections,
             ppInputConnections,
             u32NumOutputConnections,
             ppOutputConnections
         );
-        ViPERLog("[ViPER] Child LockForProcess hr=0x%08X\n", hrChild);
+        ViPERLog("[ViPER] Child LockForProcess hr=0x%08X\n", hr_child);
     }
 
     HRESULT hr = CBaseAudioProcessingObject::LockForProcess(
@@ -379,52 +340,51 @@ STDMETHODIMP CViPER4WindowsMFX::LockForProcess(
     UNCOMPRESSEDAUDIOFORMAT format;
     hr = ppInputConnections[0]->pFormat->GetUncompressedAudioFormat(&format);
     if (SUCCEEDED(hr)) {
-        mChannelCount = format.dwSamplesPerFrame;
-        mSampleRate = static_cast<UINT32>(format.fFramesPerSecond);
+        channel_count_ = format.dwSamplesPerFrame;
+        sample_rate_ = static_cast<UINT32>(format.fFramesPerSecond);
     }
-    if (mChannelCount == 0) mChannelCount = 2;
-    mMaxFrames = ppInputConnections[0]->u32MaxFrameCount;
+    if (channel_count_ == 0) channel_count_ = 2;
+    max_frames_ = ppInputConnections[0]->u32MaxFrameCount;
 
-    if (mEngine) {
-        mEngine->SetSamplingRate(mSampleRate);
-        mEngine->resetAllEffects();
-        mProcessBuffer.resize(mMaxFrames * mChannelCount);
+    if (engine_) {
+        engine_->SetSamplingRate(sample_rate_);
+        engine_->ResetAllEffects();
+        process_buffer_.resize(max_frames_ * channel_count_);
         ViPERLog(
             "[ViPER] Engine configured: rate=%u buffer=%zu\n",
-            mSampleRate,
-            mProcessBuffer.size()
+            sample_rate_,
+            process_buffer_.size()
         );
     }
 
-    if (mSharedParams) {
-        mSharedParams->apoSampleRate = mSampleRate;
-    }
+    WriteStatusShm();
 
     ViPERLog(
         "[ViPER] LockForProcess (this=%p): SUCCESS ch=%u rate=%u maxFrames=%u\n",
         this,
-        mChannelCount,
-        mSampleRate,
-        mMaxFrames
+        channel_count_,
+        sample_rate_,
+        max_frames_
     );
     return S_OK;
 }
 
 STDMETHODIMP CViPER4WindowsMFX::UnlockForProcess() {
     ViPERLog("[ViPER] UnlockForProcess called (this=%p)\n", this);
-    if (mChildCfg) {
-        mChildCfg->UnlockForProcess();
+    if (child_cfg_) {
+        child_cfg_->UnlockForProcess();
     }
     return CBaseAudioProcessingObject::UnlockForProcess();
 }
 
 #pragma AVRT_CODE_BEGIN
-STDMETHODIMP_(void) CViPER4WindowsMFX::APOProcess(
+STDMETHODIMP_(void)
+CViPER4WindowsMFX::APOProcess(
     UINT32 u32NumInputConnections,
-    APO_CONNECTION_PROPERTY** ppInputConnections,
+    APO_CONNECTION_PROPERTY **ppInputConnections,
     UINT32 u32NumOutputConnections,
-    APO_CONNECTION_PROPERTY** ppOutputConnections)
-{
+    APO_CONNECTION_PROPERTY **ppOutputConnections
+) {
     if (u32NumInputConnections == 0 || u32NumOutputConnections == 0
         || ppInputConnections == nullptr || ppOutputConnections == nullptr
         || ppInputConnections[0] == nullptr || ppOutputConnections[0] == nullptr) {
@@ -441,23 +401,18 @@ STDMETHODIMP_(void) CViPER4WindowsMFX::APOProcess(
             ppInputConnections[0]->u32BufferFlags,
             ppInputConnections[0]->u32ValidFrameCount,
             (pIn == pOut) ? "YES" : "NO",
-            mChildRT,
+            child_rt_,
             (ppInputConnections[0]->u32ValidFrameCount > 0 && pIn) ? pIn[0] : 0.0f
         );
     }
     apoProcessCount++;
 
-    if (mSharedParams && (apoProcessCount & 0x3F) == 0) {
-        auto now = std::chrono::system_clock::now();
-        auto ms =
-            std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch())
-                .count();
-        mSharedParams->apoProcessTimeMs = static_cast<uint64_t>(ms);
-        mSharedParams->apoSampleRate = mSampleRate;
+    if ((apoProcessCount & 0x3F) == 0) {
+        WriteStatusShm();
     }
 
-    if (mChildRT) {
-        mChildRT->APOProcess(
+    if (child_rt_) {
+        child_rt_->APOProcess(
             u32NumInputConnections,
             ppInputConnections,
             u32NumOutputConnections,
@@ -470,29 +425,42 @@ STDMETHODIMP_(void) CViPER4WindowsMFX::APOProcess(
         case BUFFER_SILENT: {
             float *pInput = reinterpret_cast<float *>(ppInputConnections[0]->pBuffer);
             float *pOutput = reinterpret_cast<float *>(ppOutputConnections[0]->pBuffer);
-            UINT32 frameCount = ppInputConnections[0]->u32ValidFrameCount;
+            UINT32 frame_count = ppInputConnections[0]->u32ValidFrameCount;
 
             if (ppInputConnections[0]->u32BufferFlags == BUFFER_SILENT) {
-                memset(pInput, 0, frameCount * mChannelCount * sizeof(float));
+                memset(pInput, 0, frame_count * channel_count_ * sizeof(float));
             }
 
-            if (!mChildRT && pOutput != pInput) {
-                memcpy(pOutput, pInput, frameCount * mChannelCount * sizeof(float));
+            if (!child_rt_ && pOutput != pInput) {
+                memcpy(pOutput, pInput, frame_count * channel_count_ * sizeof(float));
             }
 
-            bool masterOn = mMasterEnabled.load(std::memory_order_relaxed);
-            if (mEngine && frameCount > 0 && masterOn) {
-                UINT32 totalSamples = frameCount * mChannelCount;
-                if (mProcessBuffer.size() < totalSamples) {
-                    mProcessBuffer.resize(totalSamples);
+            if (staged_master_off_.exchange(false, std::memory_order_acquire)) {
+                std::lock_guard<std::mutex> g(engine_lock_);
+                engine_->ResetAllEffects();
+            }
+            auto *pending = staged_params_.exchange(nullptr, std::memory_order_acquire);
+            if (pending) {
+                std::lock_guard<std::mutex> g(engine_lock_);
+                ApplyParamsToEngine(*pending);
+                auto *prev =
+                    consumed_params_.exchange(pending, std::memory_order_relaxed);
+                (void) prev;
+            }
+
+            bool master_on = master_enabled_.load(std::memory_order_relaxed);
+            if (engine_ && frame_count > 0 && master_on) {
+                UINT32 total_samples = frame_count * channel_count_;
+                if (process_buffer_.size() < total_samples) {
+                    process_buffer_.resize(total_samples);
                 }
-                memcpy(mProcessBuffer.data(), pOutput, totalSamples * sizeof(float));
-                float beforeSample = mProcessBuffer[0];
+                memcpy(process_buffer_.data(), pOutput, total_samples * sizeof(float));
+                float beforeSample = process_buffer_[0];
                 {
-                    std::lock_guard<std::mutex> g(mEngineLock);
-                    mEngine->process(mProcessBuffer, frameCount);
+                    std::lock_guard<std::mutex> g(engine_lock_);
+                    engine_->Process(process_buffer_, frame_count);
                 }
-                float afterSample = mProcessBuffer[0];
+                float afterSample = process_buffer_[0];
                 if (apoProcessCount < 15) {
                     ViPERLog(
                         "[ViPER] Engine: before=%.6f after=%.6f delta=%.6f scale=%.3f\n",
@@ -502,10 +470,10 @@ STDMETHODIMP_(void) CViPER4WindowsMFX::APOProcess(
                         (beforeSample != 0.0f) ? afterSample / beforeSample : 0.0f
                     );
                 }
-                memcpy(pOutput, mProcessBuffer.data(), totalSamples * sizeof(float));
+                memcpy(pOutput, process_buffer_.data(), total_samples * sizeof(float));
             }
 
-            ppOutputConnections[0]->u32ValidFrameCount = frameCount;
+            ppOutputConnections[0]->u32ValidFrameCount = frame_count;
             ppOutputConnections[0]->u32BufferFlags = BUFFER_VALID;
             break;
         }
@@ -516,563 +484,335 @@ STDMETHODIMP_(void) CViPER4WindowsMFX::APOProcess(
 #pragma AVRT_CODE_END
 
 void CViPER4WindowsMFX::TryOpenSharedMemory() {
-    if (mSharedParams) return;
-
     ULONGLONG now = GetTickCount64();
-    if (mLastShmAttempt != 0 && (now - mLastShmAttempt) < 1000) return;
-    mLastShmAttempt = now;
+    if (last_shm_attempt_ != 0 && (now - last_shm_attempt_) < 1000) return;
+    last_shm_attempt_ = now;
 
-    mMapFile = OpenFileMappingW(FILE_MAP_READ | FILE_MAP_WRITE, FALSE, VIPER_SHM_NAME);
-    DWORD openErr = GetLastError();
-    if (mMapFile) {
-        mSharedParams = static_cast<ViPERSharedParams *>(MapViewOfFile(
-            mMapFile, FILE_MAP_READ | FILE_MAP_WRITE, 0, 0, sizeof(ViPERSharedParams)
-        ));
-        if (mSharedParams) {
-            mSharedParams->apoSampleRate = mSampleRate;
-            snprintf(
-                mSharedParams->apoVersionString,
-                sizeof(mSharedParams->apoVersionString),
-                "%s(%s)",
-                VERSION_NAME,
-                VIPER_STRINGIFY(VERSION_CODE)
+    if (!params_base_) {
+        params_map_ = OpenFileMappingW(FILE_MAP_READ, FALSE, VIPER_PARAMS_SHM_NAME);
+        if (params_map_) {
+            params_base_ = static_cast<uint8_t *>(
+                MapViewOfFile(params_map_, FILE_MAP_READ, 0, 0, VIPER_PARAMS_SHM_SIZE)
             );
-            strncpy_s(
-                mSharedParams->apoArchString,
-                sizeof(mSharedParams->apoArchString),
-                kArch,
-                _TRUNCATE
-            );
-            mLastSequence.store(UINT32_MAX, std::memory_order_relaxed);
-            ViPERLog("[ViPER] TryOpenSharedMemory: SUCCESS shm=%p\n", mSharedParams);
-        } else {
-            ViPERLog(
-                "[ViPER] TryOpenSharedMemory: MapViewOfFile FAILED err=%lu\n",
-                GetLastError()
-            );
-            CloseHandle(mMapFile);
-            mMapFile = nullptr;
+            if (!params_base_) {
+                ViPERLog(
+                    "[ViPER] shm_params MapViewOfFile FAILED err=%lu\n", GetLastError()
+                );
+                CloseHandle(params_map_);
+                params_map_ = nullptr;
+            } else {
+                last_update_count_ = UINT32_MAX;
+                ViPERLog("[ViPER] shm_params OPENED base=%p\n", params_base_);
+            }
         }
-    } else {
-        ViPERLog(
-            "[ViPER] TryOpenSharedMemory: OpenFileMapping FAILED err=%lu\n", openErr
+    }
+
+    if (!status_base_) {
+        status_map_ = OpenFileMappingW(
+            FILE_MAP_READ | FILE_MAP_WRITE, FALSE, VIPER_STATUS_SHM_NAME
         );
-    }
-
-    if (!mParamEvent) {
-        mParamEvent = OpenEventW(SYNCHRONIZE, FALSE, VIPER_EVENT_NAME);
-    }
-    if (!mBulkMapFile) {
-        mBulkMapFile = OpenFileMappingW(FILE_MAP_READ, FALSE, VIPER_BULK_SHM_NAME);
-        if (mBulkMapFile) {
-            mBulkData =
-                MapViewOfFile(mBulkMapFile, FILE_MAP_READ, 0, 0, VIPER_BULK_SHM_SIZE);
+        if (status_map_) {
+            status_base_ = static_cast<uint8_t *>(MapViewOfFile(
+                status_map_, FILE_MAP_READ | FILE_MAP_WRITE, 0, 0, VIPER_STATUS_SHM_SIZE
+            ));
+            if (!status_base_) {
+                ViPERLog(
+                    "[ViPER] shm_status MapViewOfFile FAILED err=%lu\n", GetLastError()
+                );
+                CloseHandle(status_map_);
+                status_map_ = nullptr;
+            } else {
+                ViPERLog("[ViPER] shm_status OPENED base=%p\n", status_base_);
+                WriteStatusShm();
+            }
         }
     }
-    if (!mBulkEvent) {
-        mBulkEvent = OpenEventW(SYNCHRONIZE, FALSE, VIPER_BULK_EVENT_NAME);
+
+    if (!param_event_) {
+        param_event_ = OpenEventW(SYNCHRONIZE, FALSE, VIPER_EVENT_NAME);
     }
-    if (!mBulkAckEvent) {
-        mBulkAckEvent = OpenEventW(EVENT_MODIFY_STATE, FALSE, VIPER_BULK_ACK_EVENT_NAME);
+    if (!bulk_map_file_) {
+        bulk_map_file_ = OpenFileMappingW(FILE_MAP_READ, FALSE, VIPER_BULK_SHM_NAME);
+        if (bulk_map_file_) {
+            bulk_data_ =
+                MapViewOfFile(bulk_map_file_, FILE_MAP_READ, 0, 0, VIPER_BULK_SHM_SIZE);
+        }
+    }
+    if (!bulk_event_) {
+        bulk_event_ = OpenEventW(SYNCHRONIZE, FALSE, VIPER_BULK_EVENT_NAME);
     }
 }
 
 void CViPER4WindowsMFX::CloseSharedMemory() {
-    if (mSharedParams) {
-        UnmapViewOfFile(mSharedParams);
-        mSharedParams = nullptr;
+    if (params_base_) {
+        UnmapViewOfFile(params_base_);
+        params_base_ = nullptr;
     }
-    if (mMapFile) {
-        CloseHandle(mMapFile);
-        mMapFile = nullptr;
+    if (params_map_) {
+        CloseHandle(params_map_);
+        params_map_ = nullptr;
     }
-    if (mParamEvent) {
-        CloseHandle(mParamEvent);
-        mParamEvent = nullptr;
+    if (status_base_) {
+        UnmapViewOfFile(status_base_);
+        status_base_ = nullptr;
     }
-    if (mBulkData) {
-        UnmapViewOfFile(mBulkData);
-        mBulkData = nullptr;
+    if (status_map_) {
+        CloseHandle(status_map_);
+        status_map_ = nullptr;
     }
-    if (mBulkMapFile) {
-        CloseHandle(mBulkMapFile);
-        mBulkMapFile = nullptr;
+    if (param_event_) {
+        CloseHandle(param_event_);
+        param_event_ = nullptr;
     }
-    if (mBulkEvent) {
-        CloseHandle(mBulkEvent);
-        mBulkEvent = nullptr;
+    if (bulk_data_) {
+        UnmapViewOfFile(bulk_data_);
+        bulk_data_ = nullptr;
     }
-    if (mBulkAckEvent) {
-        CloseHandle(mBulkAckEvent);
-        mBulkAckEvent = nullptr;
+    if (bulk_map_file_) {
+        CloseHandle(bulk_map_file_);
+        bulk_map_file_ = nullptr;
     }
+    if (bulk_event_) {
+        CloseHandle(bulk_event_);
+        bulk_event_ = nullptr;
+    }
+}
+
+void CViPER4WindowsMFX::WriteStatusShm() {
+    if (!status_base_) return;
+    auto *s = reinterpret_cast<V4WStatus *>(status_base_);
+    if (s->magic != VIPER_SHM_MAGIC || s->version != VIPER_FORMAT_VERSION) {
+        memset(s, 0, sizeof(V4WStatus));
+        s->magic = VIPER_SHM_MAGIC;
+        s->version = VIPER_FORMAT_VERSION;
+    }
+    s->enabled = 1;
+    s->configured = engine_ ? 1 : 0;
+    s->sample_rate = sample_rate_;
+    s->processedFrames = engine_ ? engine_->GetProcessedFrames() : 0;
+    snprintf(
+        s->version_name,
+        sizeof(s->version_name),
+        "%s(%s)",
+        VERSION_NAME,
+        VIPER_STRINGIFY(VERSION_CODE)
+    );
+    strncpy_s(s->arch_string, sizeof(s->arch_string), kArch, _TRUNCATE);
+    status_seq_++;
+    InterlockedExchange(
+        reinterpret_cast<volatile LONG *>(&s->status_seq), static_cast<LONG>(status_seq_)
+    );
 }
 
 void CViPER4WindowsMFX::StartParamWatch() {
-    mShutdownEvent = CreateEventW(nullptr, TRUE, FALSE, nullptr);
-    mWatchThread = CreateThread(nullptr, 0, ParamWatchThread, this, 0, nullptr);
+    shutdown_event_ = CreateEventW(nullptr, TRUE, FALSE, nullptr);
+    watch_thread_ = CreateThread(nullptr, 0, ParamWatchThread, this, 0, nullptr);
 }
 
 void CViPER4WindowsMFX::StopParamWatch() {
-    if (mShutdownEvent) {
-        SetEvent(mShutdownEvent);
+    if (shutdown_event_) {
+        SetEvent(shutdown_event_);
     }
-    if (mWatchThread) {
-        WaitForSingleObject(mWatchThread, 2000);
-        CloseHandle(mWatchThread);
-        mWatchThread = nullptr;
+    if (watch_thread_) {
+        WaitForSingleObject(watch_thread_, 2000);
+        CloseHandle(watch_thread_);
+        watch_thread_ = nullptr;
     }
-    if (mShutdownEvent) {
-        CloseHandle(mShutdownEvent);
-        mShutdownEvent = nullptr;
+    if (shutdown_event_) {
+        CloseHandle(shutdown_event_);
+        shutdown_event_ = nullptr;
     }
 }
 
 unsigned long __stdcall CViPER4WindowsMFX::ParamWatchThread(void *parameter) {
     auto *self = static_cast<CViPER4WindowsMFX *>(parameter);
 
+    DWORD mmcss_task_index = 0;
+    HANDLE mmcss_handle = AvSetMmThreadCharacteristicsW(L"Audio", &mmcss_task_index);
+    if (!mmcss_handle) {
+        ViPERLog("[ViPER] AvSetMmThreadCharacteristics failed err=%lu\n", GetLastError());
+    }
+
     while (true) {
         self->TryOpenSharedMemory();
 
         self->CheckAndApplyParams();
+        self->CheckAndReloadBulk(
+            kBulkDdcBase, kBulkDdcRegionSize, self->last_bulk_ddc_seq_
+        );
+        self->CheckAndReloadBulk(
+            kBulkConvolverBase, kBulkConvolverRegionSize, self->last_bulk_convolver_seq_
+        );
 
-        HANDLE handles[3] = {self->mShutdownEvent, nullptr, nullptr};
-        DWORD handleCount = 1;
-        if (self->mParamEvent) {
-            handles[handleCount++] = self->mParamEvent;
+        HANDLE handles[3] = {self->shutdown_event_, nullptr, nullptr};
+        DWORD handle_count = 1;
+        if (self->param_event_) {
+            handles[handle_count++] = self->param_event_;
         }
-        if (self->mBulkEvent) {
-            handles[handleCount++] = self->mBulkEvent;
+        if (self->bulk_event_) {
+            handles[handle_count++] = self->bulk_event_;
         }
 
-        DWORD timeout = (handleCount > 1) ? INFINITE : 1000;
-        DWORD result = WaitForMultipleObjects(handleCount, handles, FALSE, timeout);
+        DWORD timeout = (handle_count > 1) ? INFINITE : 1000;
+        DWORD result = WaitForMultipleObjects(handle_count, handles, FALSE, timeout);
         if (result == WAIT_OBJECT_0) break;
 
-        if (handleCount == 3 && result == WAIT_OBJECT_0 + 2) {
-            self->ProcessBulkData();
-            if (self->mBulkAckEvent) SetEvent(self->mBulkAckEvent);
+        if (handle_count == 3 && result == WAIT_OBJECT_0 + 2) {
+            self->CheckAndReloadBulk(
+                kBulkDdcBase, kBulkDdcRegionSize, self->last_bulk_ddc_seq_
+            );
+            self->CheckAndReloadBulk(
+                kBulkConvolverBase,
+                kBulkConvolverRegionSize,
+                self->last_bulk_convolver_seq_
+            );
         }
 
         self->CheckAndApplyParams();
+    }
+
+    if (mmcss_handle) {
+        AvRevertMmThreadCharacteristics(mmcss_handle);
     }
     return 0;
 }
 
 void CViPER4WindowsMFX::CheckAndApplyParams() {
-    if (!mSharedParams) return;
+    if (!params_base_) return;
 
-    uint32_t seq = mSharedParams->sequenceNumber;
-    if (seq != mLastSequence.load(std::memory_order_relaxed)) {
-        MemoryBarrier();
-        ViPERSharedParams newParams;
-        memcpy(&newParams, mSharedParams, sizeof(ViPERSharedParams));
-        if (newParams.sequenceNumber != seq) return;
-        mLastSequence.store(seq, std::memory_order_relaxed);
-
-        {
-            std::lock_guard<std::mutex> g(mEngineLock);
-            ApplyParamsToEngine(newParams);
-        }
-    }
-}
-
-void CViPER4WindowsMFX::ProcessBulkData() {
-    if (!mBulkData) return;
-
-    auto *hdr = static_cast<const ViPERBulkHeader *>(mBulkData);
-    const uint8_t *payload =
-        static_cast<const uint8_t *>(mBulkData) + sizeof(ViPERBulkHeader);
-    uint32_t maxPayload = VIPER_BULK_SHM_SIZE - sizeof(ViPERBulkHeader);
-
-    if (hdr->dataSize > maxPayload) return;
-
-    std::lock_guard<std::mutex> g(mEngineLock);
-
-    switch (hdr->command) {
-        case VIPER_BULK_CMD_DDC: {
-            if (hdr->dataSize < 4) break;
-            uint32_t arrSize = *reinterpret_cast<const uint32_t *>(payload);
-            if (arrSize > hdr->dataSize - 4) break;
-            signed char *arr = reinterpret_cast<signed char *>(
-                const_cast<uint8_t *>(payload + sizeof(uint32_t))
-            );
-            mEngine->DispatchCommand(PARAM_HP_DDC_COEFFICIENTS, 0, 0, 0, 0, arrSize, arr);
-            break;
-        }
-
-        case VIPER_BULK_CMD_CONVOLVER_PREPARE:
-            mEngine->DispatchCommand(
-                PARAM_HP_CONVOLVER_PREPARE_BUFFER,
-                static_cast<int>(hdr->arg1),
-                static_cast<int>(hdr->arg2),
-                0,
-                0,
-                0,
-                nullptr
-            );
-            break;
-
-        case VIPER_BULK_CMD_CONVOLVER_CHUNK: {
-            if (hdr->dataSize < 8) break;
-            int chunkIndex = *reinterpret_cast<const int *>(payload);
-            uint32_t floatsInChunk =
-                *reinterpret_cast<const uint32_t *>(payload + sizeof(int));
-            uint32_t floatDataSize = hdr->dataSize - sizeof(int) - sizeof(uint32_t);
-            if (floatsInChunk > floatDataSize) break;
-            const uint8_t *floatData = payload + sizeof(int) + sizeof(uint32_t);
-            mEngine->DispatchCommand(
-                PARAM_HP_CONVOLVER_SET_BUFFER,
-                chunkIndex,
-                0,
-                0,
-                0,
-                floatsInChunk,
-                reinterpret_cast<signed char *>(const_cast<uint8_t *>(floatData))
-            );
-            break;
-        }
-
-        case VIPER_BULK_CMD_CONVOLVER_COMMIT:
-            mEngine->DispatchCommand(
-                PARAM_HP_CONVOLVER_COMMIT_BUFFER,
-                static_cast<int>(hdr->arg1),
-                static_cast<int>(hdr->arg2),
-                static_cast<int>(hdr->arg3),
-                0,
-                0,
-                nullptr
-            );
-            break;
-    }
-}
-
-void CViPER4WindowsMFX::ApplyParamsToEngine(const ViPERSharedParams &p) {
-    static unsigned applyCount = 0;
-    if (applyCount < 20) {
-        ViPERLog(
-            "[ViPER] ApplyParamsToEngine #%u: master=%u fxType=%u vol=%u bass=%u "
-            "clarity=%u seq=%u\n",
-            applyCount,
-            p.masterEnabled,
-            p.fxType,
-            p.outputVolume,
-            p.viperBassEnabled,
-            p.viperClarityEnabled,
-            p.sequenceNumber
-        );
-    }
-    applyCount++;
-
-    auto cmd = [this](int param, int v1, int v2 = 0, int v3 = 0, int v4 = 0) {
-        mEngine->DispatchCommand(param, v1, v2, v3, v4, 0, nullptr);
-    };
-
-    mMasterEnabled.store(p.masterEnabled != 0, std::memory_order_relaxed);
-    if (!p.masterEnabled) {
-        mEngine->resetAllEffects();
+    auto *hdr = reinterpret_cast<volatile V4WHeader *>(params_base_);
+    if (hdr->magic != VIPER_SHM_MAGIC || hdr->version != VIPER_FORMAT_VERSION) {
         return;
     }
 
-    bool isSpk = (p.fxType == 1);
-    cmd(PARAM_FX_TYPE_SWITCH, isSpk ? 1 : 0);
+    uint32_t update_count = hdr->update_count;
+    if (update_count == last_update_count_) return;
+    MemoryBarrier();
 
-    cmd(isSpk ? PARAM_SPK_OUTPUT_VOLUME : PARAM_HP_OUTPUT_VOLUME, p.outputVolume);
-    cmd(isSpk ? PARAM_SPK_CHANNEL_PAN : PARAM_HP_CHANNEL_PAN, p.channelPan);
-    cmd(isSpk ? PARAM_SPK_LIMITER : PARAM_HP_LIMITER, p.limiterThreshold);
+    uint32_t active_index = hdr->active_index;
+    uint32_t slot_off = (active_index == 0) ? kV4WSlotAOffset : kV4WSlotBOffset;
 
-    cmd(isSpk ? PARAM_SPK_AGC_ENABLE : PARAM_HP_AGC_ENABLE, p.agcEnabled);
-    cmd(isSpk ? PARAM_SPK_AGC_RATIO : PARAM_HP_AGC_RATIO, p.agcStrength);
-    cmd(isSpk ? PARAM_SPK_AGC_VOLUME : PARAM_HP_AGC_VOLUME, p.agcThreshold);
-    cmd(isSpk ? PARAM_SPK_AGC_MAX_SCALER : PARAM_HP_AGC_MAX_SCALER, p.agcMaxGain);
+    viper::ViPERParams snapshot;
+    memcpy(&snapshot, params_base_ + slot_off, sizeof(viper::ViPERParams));
 
-    cmd(isSpk ? PARAM_SPK_DDC_ENABLE : PARAM_HP_DDC_ENABLE, p.ddcEnabled);
+    master_enabled_.store(hdr->master_enabled != 0, std::memory_order_relaxed);
 
-    cmd(isSpk ? PARAM_SPK_FET_COMPRESSOR_ENABLE : PARAM_HP_FET_COMPRESSOR_ENABLE,
-        p.fetCompressorEnabled);
-    cmd(isSpk ? PARAM_SPK_FET_COMPRESSOR_THRESHOLD : PARAM_HP_FET_COMPRESSOR_THRESHOLD,
-        p.fetCompressorThreshold);
-    cmd(isSpk ? PARAM_SPK_FET_COMPRESSOR_RATIO : PARAM_HP_FET_COMPRESSOR_RATIO,
-        p.fetCompressorRatio);
-    cmd(isSpk ? PARAM_SPK_FET_COMPRESSOR_KNEE : PARAM_HP_FET_COMPRESSOR_KNEE,
-        p.fetCompressorKnee);
-    cmd(isSpk ? PARAM_SPK_FET_COMPRESSOR_AUTO_KNEE : PARAM_HP_FET_COMPRESSOR_AUTO_KNEE,
-        p.fetCompressorAutoKnee);
-    cmd(isSpk ? PARAM_SPK_FET_COMPRESSOR_GAIN : PARAM_HP_FET_COMPRESSOR_GAIN,
-        p.fetCompressorGain);
-    cmd(isSpk ? PARAM_SPK_FET_COMPRESSOR_AUTO_GAIN : PARAM_HP_FET_COMPRESSOR_AUTO_GAIN,
-        p.fetCompressorAutoGain);
-    cmd(isSpk ? PARAM_SPK_FET_COMPRESSOR_ATTACK : PARAM_HP_FET_COMPRESSOR_ATTACK,
-        p.fetCompressorAttack);
-    cmd(isSpk ? PARAM_SPK_FET_COMPRESSOR_AUTO_ATTACK
-              : PARAM_HP_FET_COMPRESSOR_AUTO_ATTACK,
-        p.fetCompressorAutoAttack);
-    cmd(isSpk ? PARAM_SPK_FET_COMPRESSOR_RELEASE : PARAM_HP_FET_COMPRESSOR_RELEASE,
-        p.fetCompressorRelease);
-    cmd(isSpk ? PARAM_SPK_FET_COMPRESSOR_AUTO_RELEASE
-              : PARAM_HP_FET_COMPRESSOR_AUTO_RELEASE,
-        p.fetCompressorAutoRelease);
-    cmd(isSpk ? PARAM_SPK_FET_COMPRESSOR_KNEE_MULTI : PARAM_HP_FET_COMPRESSOR_KNEE_MULTI,
-        p.fetCompressorKneeMulti);
-    cmd(isSpk ? PARAM_SPK_FET_COMPRESSOR_MAX_ATTACK : PARAM_HP_FET_COMPRESSOR_MAX_ATTACK,
-        p.fetCompressorMaxAttack);
-    cmd(isSpk ? PARAM_SPK_FET_COMPRESSOR_MAX_RELEASE
-              : PARAM_HP_FET_COMPRESSOR_MAX_RELEASE,
-        p.fetCompressorMaxRelease);
-    cmd(isSpk ? PARAM_SPK_FET_COMPRESSOR_CREST : PARAM_HP_FET_COMPRESSOR_CREST,
-        p.fetCompressorCrest);
-    cmd(isSpk ? PARAM_SPK_FET_COMPRESSOR_ADAPT : PARAM_HP_FET_COMPRESSOR_ADAPT,
-        p.fetCompressorAdapt);
-    cmd(isSpk ? PARAM_SPK_FET_COMPRESSOR_NO_CLIP : PARAM_HP_FET_COMPRESSOR_NO_CLIP,
-        p.fetCompressorNoClip);
+    delete consumed_params_.exchange(nullptr, std::memory_order_relaxed);
 
-    cmd(isSpk ? PARAM_SPK_SPECTRUM_EXTENSION_ENABLE : PARAM_HP_SPECTRUM_EXTENSION_ENABLE,
-        p.spectrumExtensionEnabled);
-    cmd(isSpk ? PARAM_SPK_SPECTRUM_EXTENSION_BARK : PARAM_HP_SPECTRUM_EXTENSION_BARK,
-        p.spectrumExtensionBark);
-    cmd(isSpk ? PARAM_SPK_SPECTRUM_EXTENSION_BARK_RECONSTRUCT
-              : PARAM_HP_SPECTRUM_EXTENSION_BARK_RECONSTRUCT,
-        p.spectrumExtensionExciter);
-
-    cmd(isSpk ? PARAM_SPK_EQ_ENABLE : PARAM_HP_EQ_ENABLE, p.equalizerEnabled);
-    cmd(isSpk ? PARAM_SPK_EQ_BAND_COUNT : PARAM_HP_EQ_BAND_COUNT, p.equalizerBandCount);
-    for (uint32_t i = 0; i < p.equalizerBandCount && i < 31; i++) {
-        cmd(isSpk ? PARAM_SPK_EQ_BAND_LEVEL : PARAM_HP_EQ_BAND_LEVEL,
-            i,
-            p.equalizerBands[i]);
+    if (hdr->master_enabled) {
+        auto *staged = new viper::ViPERParams(snapshot);
+        auto *prev = staged_params_.exchange(staged, std::memory_order_release);
+        delete prev;
+    } else {
+        staged_master_off_.store(true, std::memory_order_release);
     }
 
-    cmd(isSpk ? PARAM_SPK_CONVOLVER_ENABLE : PARAM_HP_CONVOLVER_ENABLE,
-        p.convolutionEnabled);
-    cmd(isSpk ? PARAM_SPK_CONVOLVER_CROSS_CHANNEL : PARAM_HP_CONVOLVER_CROSS_CHANNEL,
-        p.convolutionCrossChannel);
+    last_update_count_ = update_count;
+    WriteStatusShm();
+}
 
-    cmd(isSpk ? PARAM_SPK_FIELD_SURROUND_ENABLE : PARAM_HP_FIELD_SURROUND_ENABLE,
-        p.fieldSurroundEnabled);
-    cmd(isSpk ? PARAM_SPK_FIELD_SURROUND_WIDENING : PARAM_HP_FIELD_SURROUND_WIDENING,
-        p.fieldSurroundWidening);
-    cmd(isSpk ? PARAM_SPK_FIELD_SURROUND_MID_IMAGE : PARAM_HP_FIELD_SURROUND_MID_IMAGE,
-        p.fieldSurroundMidImage);
-    cmd(isSpk ? PARAM_SPK_FIELD_SURROUND_DEPTH : PARAM_HP_FIELD_SURROUND_DEPTH,
-        p.fieldSurroundDepth);
+bool CViPER4WindowsMFX::CheckAndReloadBulk(
+    uint32_t base, uint32_t region_size, uint32_t &last_seq
+) {
+    if (!bulk_data_) return false;
 
-    cmd(isSpk ? PARAM_SPK_DIFF_SURROUND_ENABLE : PARAM_HP_DIFF_SURROUND_ENABLE,
-        p.diffSurroundEnabled);
-    cmd(isSpk ? PARAM_SPK_DIFF_SURROUND_DELAY : PARAM_HP_DIFF_SURROUND_DELAY,
-        p.diffSurroundDelay);
-    cmd(isSpk ? PARAM_SPK_DIFF_SURROUND_REVERSE : PARAM_HP_DIFF_SURROUND_REVERSE,
-        p.diffSurroundReverse);
-    cmd(isSpk ? PARAM_SPK_DIFF_SURROUND_WET_DRY_MIX : PARAM_HP_DIFF_SURROUND_WET_DRY_MIX,
-        p.diffSurroundWetDryMix);
-    cmd(isSpk ? PARAM_SPK_DIFF_SURROUND_LP_CUTOFF : PARAM_HP_DIFF_SURROUND_LP_CUTOFF,
-        p.diffSurroundLpCutoff);
+    auto *bulk_base = static_cast<const uint8_t *>(bulk_data_) + base;
+    auto *hdr = reinterpret_cast<volatile const ViPERBulkHeader *>(bulk_base);
 
-    cmd(isSpk ? PARAM_SPK_HEADPHONE_SURROUND_ENABLE : PARAM_HP_HEADPHONE_SURROUND_ENABLE,
-        p.vheEnabled);
-    cmd(isSpk ? PARAM_SPK_HEADPHONE_SURROUND_STRENGTH
-              : PARAM_HP_HEADPHONE_SURROUND_STRENGTH,
-        p.vheQuality);
+    uint32_t seq = hdr->seq;
+    if (seq == last_seq) return false;
+    MemoryBarrier();
 
-    cmd(isSpk ? PARAM_SPK_REVERB_ENABLE : PARAM_HP_REVERB_ENABLE, p.reverberationEnabled);
-    cmd(isSpk ? PARAM_SPK_REVERB_ROOM_SIZE : PARAM_HP_REVERB_ROOM_SIZE,
-        p.reverberationRoomSize);
-    cmd(isSpk ? PARAM_SPK_REVERB_ROOM_WIDTH : PARAM_HP_REVERB_ROOM_WIDTH,
-        p.reverberationRoomWidth);
-    cmd(isSpk ? PARAM_SPK_REVERB_ROOM_DAMPENING : PARAM_HP_REVERB_ROOM_DAMPENING,
-        p.reverberationRoomDampening);
-    cmd(isSpk ? PARAM_SPK_REVERB_ROOM_WET_SIGNAL : PARAM_HP_REVERB_ROOM_WET_SIGNAL,
-        p.reverberationWetSignal);
-    cmd(isSpk ? PARAM_SPK_REVERB_ROOM_DRY_SIGNAL : PARAM_HP_REVERB_ROOM_DRY_SIGNAL,
-        p.reverberationDrySignal);
+    ViPERBulkHeader hdr_copy;
+    memcpy(&hdr_copy, bulk_base, sizeof(ViPERBulkHeader));
+    MemoryBarrier();
+    if (hdr->seq != seq) return false;
 
-    cmd(isSpk ? PARAM_SPK_DYNAMIC_SYSTEM_ENABLE : PARAM_HP_DYNAMIC_SYSTEM_ENABLE,
-        p.dynamicSystemEnabled);
-    cmd(isSpk ? PARAM_SPK_DYNAMIC_SYSTEM_X_COEFFICIENTS
-              : PARAM_HP_DYNAMIC_SYSTEM_X_COEFFICIENTS,
-        p.dynamicSystemXLow,
-        p.dynamicSystemXHigh);
-    cmd(isSpk ? PARAM_SPK_DYNAMIC_SYSTEM_Y_COEFFICIENTS
-              : PARAM_HP_DYNAMIC_SYSTEM_Y_COEFFICIENTS,
-        p.dynamicSystemYLow,
-        p.dynamicSystemYHigh);
-    cmd(isSpk ? PARAM_SPK_DYNAMIC_SYSTEM_SIDE_GAIN : PARAM_HP_DYNAMIC_SYSTEM_SIDE_GAIN,
-        p.dynamicSystemSideGainLow,
-        p.dynamicSystemSideGainHigh);
-    cmd(isSpk ? PARAM_SPK_DYNAMIC_SYSTEM_STRENGTH : PARAM_HP_DYNAMIC_SYSTEM_STRENGTH,
-        p.dynamicSystemStrength);
+    DispatchBulk(hdr_copy, bulk_base + sizeof(ViPERBulkHeader), region_size);
+    last_seq = seq;
+    return true;
+}
 
-    cmd(isSpk ? PARAM_SPK_TUBE_SIMULATOR_ENABLE : PARAM_HP_TUBE_SIMULATOR_ENABLE,
-        p.tubeSimulatorEnabled);
-
-    cmd(isSpk ? PARAM_SPK_BASS_ENABLE : PARAM_HP_BASS_ENABLE, p.viperBassEnabled);
-    cmd(isSpk ? PARAM_SPK_BASS_MODE : PARAM_HP_BASS_MODE, p.viperBassMode);
-    cmd(isSpk ? PARAM_SPK_BASS_FREQUENCY : PARAM_HP_BASS_FREQUENCY, p.viperBassFrequency);
-    cmd(isSpk ? PARAM_SPK_BASS_GAIN : PARAM_HP_BASS_GAIN, p.viperBassGain);
-    cmd(isSpk ? PARAM_SPK_BASS_ANTI_POP : PARAM_HP_BASS_ANTI_POP, p.viperBassAntiPop);
-
-    cmd(isSpk ? PARAM_SPK_BASS_MONO_ENABLE : PARAM_HP_BASS_MONO_ENABLE,
-        p.viperBassMonoEnabled);
-    cmd(isSpk ? PARAM_SPK_BASS_MONO_MODE : PARAM_HP_BASS_MONO_MODE, p.viperBassMonoMode);
-    cmd(isSpk ? PARAM_SPK_BASS_MONO_FREQUENCY : PARAM_HP_BASS_MONO_FREQUENCY,
-        p.viperBassMonoFrequency);
-    cmd(isSpk ? PARAM_SPK_BASS_MONO_GAIN : PARAM_HP_BASS_MONO_GAIN, p.viperBassMonoGain);
-    cmd(isSpk ? PARAM_SPK_BASS_MONO_ANTI_POP : PARAM_HP_BASS_MONO_ANTI_POP,
-        p.viperBassMonoAntiPop);
-
-    cmd(isSpk ? PARAM_SPK_CLARITY_ENABLE : PARAM_HP_CLARITY_ENABLE,
-        p.viperClarityEnabled);
-    cmd(isSpk ? PARAM_SPK_CLARITY_MODE : PARAM_HP_CLARITY_MODE, p.viperClarityMode);
-    cmd(isSpk ? PARAM_SPK_CLARITY_GAIN : PARAM_HP_CLARITY_GAIN, p.viperClarityGain);
-
-    cmd(isSpk ? PARAM_SPK_CURE_ENABLE : PARAM_HP_CURE_ENABLE, p.cureEnabled);
-    cmd(isSpk ? PARAM_SPK_CURE_STRENGTH : PARAM_HP_CURE_STRENGTH,
-        p.cureCrossfeedStrength);
-
-    cmd(isSpk ? PARAM_SPK_ANALOGX_ENABLE : PARAM_HP_ANALOGX_ENABLE, p.analogXEnabled);
-    cmd(isSpk ? PARAM_SPK_ANALOGX_MODE : PARAM_HP_ANALOGX_MODE, p.analogXMode);
-
-    cmd(PARAM_SPK_SPEAKER_CORRECTION_ENABLE, p.speakerCorrectionEnabled);
-
-    cmd(isSpk ? PARAM_SPK_MULTIBAND_COMP_ENABLE : PARAM_HP_MULTIBAND_COMP_ENABLE,
-        p.mbcEnabled);
-    for (int i = 0; i < 5; i++) {
-        cmd(isSpk ? PARAM_SPK_MULTIBAND_COMP_BAND_ENABLE
-                  : PARAM_HP_MULTIBAND_COMP_BAND_ENABLE,
-            i,
-            p.mbcBandEnables[i]);
-        cmd(isSpk ? PARAM_SPK_MULTIBAND_COMP_BAND_THRESHOLD
-                  : PARAM_HP_MULTIBAND_COMP_BAND_THRESHOLD,
-            i,
-            p.mbcThresholds[i]);
-        cmd(isSpk ? PARAM_SPK_MULTIBAND_COMP_BAND_RATIO
-                  : PARAM_HP_MULTIBAND_COMP_BAND_RATIO,
-            i,
-            p.mbcRatios[i]);
-        cmd(isSpk ? PARAM_SPK_MULTIBAND_COMP_BAND_KNEE
-                  : PARAM_HP_MULTIBAND_COMP_BAND_KNEE,
-            i,
-            p.mbcKnees[i]);
-        cmd(isSpk ? PARAM_SPK_MULTIBAND_COMP_BAND_AUTO_GAIN
-                  : PARAM_HP_MULTIBAND_COMP_BAND_AUTO_GAIN,
-            i,
-            p.mbcAutoGains[i]);
-        cmd(isSpk ? PARAM_SPK_MULTIBAND_COMP_BAND_GAIN
-                  : PARAM_HP_MULTIBAND_COMP_BAND_GAIN,
-            i,
-            p.mbcGains[i]);
-        cmd(isSpk ? PARAM_SPK_MULTIBAND_COMP_BAND_AUTO_ATTACK
-                  : PARAM_HP_MULTIBAND_COMP_BAND_AUTO_ATTACK,
-            i,
-            p.mbcAutoAttacks[i]);
-        cmd(isSpk ? PARAM_SPK_MULTIBAND_COMP_BAND_ATTACK
-                  : PARAM_HP_MULTIBAND_COMP_BAND_ATTACK,
-            i,
-            p.mbcAttacks[i]);
-        cmd(isSpk ? PARAM_SPK_MULTIBAND_COMP_BAND_AUTO_RELEASE
-                  : PARAM_HP_MULTIBAND_COMP_BAND_AUTO_RELEASE,
-            i,
-            p.mbcAutoReleases[i]);
-        cmd(isSpk ? PARAM_SPK_MULTIBAND_COMP_BAND_RELEASE
-                  : PARAM_HP_MULTIBAND_COMP_BAND_RELEASE,
-            i,
-            p.mbcReleases[i]);
-        cmd(isSpk ? PARAM_SPK_MULTIBAND_COMP_BAND_AUTO_KNEE
-                  : PARAM_HP_MULTIBAND_COMP_BAND_AUTO_KNEE,
-            i,
-            p.mbcAutoKnees[i]);
-        cmd(isSpk ? PARAM_SPK_MULTIBAND_COMP_BAND_KNEE_MULTI
-                  : PARAM_HP_MULTIBAND_COMP_BAND_KNEE_MULTI,
-            i,
-            p.mbcKneeMultis[i]);
-        cmd(isSpk ? PARAM_SPK_MULTIBAND_COMP_BAND_MAX_ATTACK
-                  : PARAM_HP_MULTIBAND_COMP_BAND_MAX_ATTACK,
-            i,
-            p.mbcMaxAttacks[i]);
-        cmd(isSpk ? PARAM_SPK_MULTIBAND_COMP_BAND_MAX_RELEASE
-                  : PARAM_HP_MULTIBAND_COMP_BAND_MAX_RELEASE,
-            i,
-            p.mbcMaxReleases[i]);
-        cmd(isSpk ? PARAM_SPK_MULTIBAND_COMP_BAND_CREST
-                  : PARAM_HP_MULTIBAND_COMP_BAND_CREST,
-            i,
-            p.mbcCrests[i]);
-        cmd(isSpk ? PARAM_SPK_MULTIBAND_COMP_BAND_ADAPT
-                  : PARAM_HP_MULTIBAND_COMP_BAND_ADAPT,
-            i,
-            p.mbcAdapts[i]);
-        cmd(isSpk ? PARAM_SPK_MULTIBAND_COMP_BAND_NO_CLIP
-                  : PARAM_HP_MULTIBAND_COMP_BAND_NO_CLIP,
-            i,
-            p.mbcNoClips[i]);
+void CViPER4WindowsMFX::DispatchBulk(
+    const ViPERBulkHeader &hdr, const uint8_t *payload, uint32_t region_size
+) {
+    if (hdr.magic != VIPER_SHM_MAGIC || hdr.version != VIPER_FORMAT_VERSION) {
+        ViPERLog(
+            "[ViPER] DispatchBulk: bad header magic=%08X version=%u",
+            hdr.magic,
+            hdr.version
+        );
+        return;
     }
-    for (int i = 0; i < 4; i++) {
-        cmd(isSpk ? PARAM_SPK_MULTIBAND_COMP_CROSSOVER_FREQ
-                  : PARAM_HP_MULTIBAND_COMP_CROSSOVER_FREQ,
-            i,
-            p.mbcCrossovers[i]);
+    if (hdr.data_size > region_size - sizeof(ViPERBulkHeader)) {
+        ViPERLog("[ViPER] DispatchBulk: payload %u exceeds region", hdr.data_size);
+        return;
     }
-    cmd(isSpk ? PARAM_SPK_MULTIBAND_COMP_BAND_COUNT : PARAM_HP_MULTIBAND_COMP_BAND_COUNT,
-        p.mbcBandCount);
 
-    cmd(isSpk ? PARAM_SPK_DYNAMIC_EQ_ENABLE : PARAM_HP_DYNAMIC_EQ_ENABLE, p.dynEqEnabled);
-    for (uint32_t i = 0; i < p.dynEqBandCount && i < 8; i++) {
-        cmd(isSpk ? PARAM_SPK_DYNAMIC_EQ_BAND_FREQ : PARAM_HP_DYNAMIC_EQ_BAND_FREQ,
-            i,
-            p.dynEqFreqs[i]);
-        cmd(isSpk ? PARAM_SPK_DYNAMIC_EQ_BAND_Q : PARAM_HP_DYNAMIC_EQ_BAND_Q,
-            i,
-            p.dynEqQs[i]);
-        cmd(isSpk ? PARAM_SPK_DYNAMIC_EQ_BAND_GAIN : PARAM_HP_DYNAMIC_EQ_BAND_GAIN,
-            i,
-            p.dynEqGains[i]);
-        cmd(isSpk ? PARAM_SPK_DYNAMIC_EQ_BAND_THRESHOLD
-                  : PARAM_HP_DYNAMIC_EQ_BAND_THRESHOLD,
-            i,
-            p.dynEqThresholds[i]);
-        cmd(isSpk ? PARAM_SPK_DYNAMIC_EQ_BAND_ATTACK : PARAM_HP_DYNAMIC_EQ_BAND_ATTACK,
-            i,
-            p.dynEqAttacks[i]);
-        cmd(isSpk ? PARAM_SPK_DYNAMIC_EQ_BAND_RELEASE : PARAM_HP_DYNAMIC_EQ_BAND_RELEASE,
-            i,
-            p.dynEqReleases[i]);
-        cmd(isSpk ? PARAM_SPK_DYNAMIC_EQ_BAND_FILTER_TYPE
-                  : PARAM_HP_DYNAMIC_EQ_BAND_FILTER_TYPE,
-            i,
-            p.dynEqFilterTypes[i]);
+    std::lock_guard<std::mutex> g(engine_lock_);
+    if (!engine_) return;
+
+    switch (hdr.command) {
+        case VIPER_BULK_CMD_DDC: {
+            const uint32_t section_count = hdr.arg1;
+            const uint32_t expected = section_count * sizeof(viper::BiquadSection) * 2;
+            if (hdr.data_size != expected) {
+                ViPERLog(
+                    "[ViPER] DDC: dataSize %u != expected %u "
+                    "(section_count=%u)",
+                    hdr.data_size,
+                    expected,
+                    section_count
+                );
+                break;
+            }
+            const auto *sec44100 =
+                reinterpret_cast<const viper::BiquadSection *>(payload);
+            const auto *sec48000 = sec44100 + section_count;
+            engine_->LoadDdcCoefficients(sec44100, sec48000, section_count);
+            ViPERLog("[ViPER] DDC load: section_count=%u OK", section_count);
+            break;
+        }
+        case VIPER_BULK_CMD_CONVOLVER_KERNEL: {
+            const uint32_t frame_count = hdr.arg1;
+            const uint32_t channels = hdr.arg2;
+            const uint32_t kernel_id = hdr.arg3;
+            if (frame_count == 0) {
+                engine_->UnloadConvolverKernel();
+                ViPERLog("[ViPER] Convolver unload OK");
+                break;
+            }
+            const uint32_t expected = frame_count * channels * sizeof(float);
+            if (hdr.data_size != expected) {
+                ViPERLog(
+                    "[ViPER] Convolver: dataSize %u != expected %u "
+                    "(frame_count=%u ch=%u)",
+                    hdr.data_size,
+                    expected,
+                    frame_count,
+                    channels
+                );
+                break;
+            }
+            const auto *samples = reinterpret_cast<const float *>(payload);
+            const auto resolved_id =
+                engine_->LoadConvolverKernel(samples, frame_count, channels, kernel_id);
+            ViPERLog(
+                "[ViPER] Convolver load: frames=%u ch=%u kernel_id=%u %s",
+                frame_count,
+                channels,
+                kernel_id,
+                resolved_id.has_value() ? "OK" : "FAILED"
+            );
+            break;
+        }
+        default:
+            ViPERLog("[ViPER] DispatchBulk: unknown command %u", hdr.command);
+            break;
     }
-    cmd(isSpk ? PARAM_SPK_DYNAMIC_EQ_BAND_COUNT : PARAM_HP_DYNAMIC_EQ_BAND_COUNT,
-        p.dynEqBandCount);
+}
 
-    cmd(isSpk ? PARAM_SPK_STEREO_IMAGER_ENABLE : PARAM_HP_STEREO_IMAGER_ENABLE,
-        p.stereoImagerEnabled);
-    cmd(isSpk ? PARAM_SPK_STEREO_IMAGER_LOW_WIDTH : PARAM_HP_STEREO_IMAGER_LOW_WIDTH,
-        p.stereoImagerLowWidth);
-    cmd(isSpk ? PARAM_SPK_STEREO_IMAGER_MID_WIDTH : PARAM_HP_STEREO_IMAGER_MID_WIDTH,
-        p.stereoImagerMidWidth);
-    cmd(isSpk ? PARAM_SPK_STEREO_IMAGER_HIGH_WIDTH : PARAM_HP_STEREO_IMAGER_HIGH_WIDTH,
-        p.stereoImagerHighWidth);
-    cmd(isSpk ? PARAM_SPK_STEREO_IMAGER_LOW_CROSSOVER
-              : PARAM_HP_STEREO_IMAGER_LOW_CROSSOVER,
-        p.stereoImagerLowCrossover);
-    cmd(isSpk ? PARAM_SPK_STEREO_IMAGER_HIGH_CROSSOVER
-              : PARAM_HP_STEREO_IMAGER_HIGH_CROSSOVER,
-        p.stereoImagerHighCrossover);
-
-    cmd(isSpk ? PARAM_SPK_LUFS_ENABLE : PARAM_HP_LUFS_ENABLE, p.lufsEnabled);
-    cmd(isSpk ? PARAM_SPK_LUFS_TARGET : PARAM_HP_LUFS_TARGET, p.lufsTarget);
-    cmd(isSpk ? PARAM_SPK_LUFS_MAX_GAIN : PARAM_HP_LUFS_MAX_GAIN, p.lufsMaxGain);
-    cmd(isSpk ? PARAM_SPK_LUFS_SPEED : PARAM_HP_LUFS_SPEED, p.lufsSpeed);
-
-    cmd(isSpk ? PARAM_SPK_PSYCHO_BASS_ENABLE : PARAM_HP_PSYCHO_BASS_ENABLE,
-        p.psychoBassEnabled);
-    cmd(isSpk ? PARAM_SPK_PSYCHO_BASS_CUTOFF : PARAM_HP_PSYCHO_BASS_CUTOFF,
-        p.psychoBassCutoff);
-    cmd(isSpk ? PARAM_SPK_PSYCHO_BASS_INTENSITY : PARAM_HP_PSYCHO_BASS_INTENSITY,
-        p.psychoBassIntensity);
-    cmd(isSpk ? PARAM_SPK_PSYCHO_BASS_HARMONIC_ORDER
-              : PARAM_HP_PSYCHO_BASS_HARMONIC_ORDER,
-        p.psychoBassHarmonicOrder);
-    cmd(isSpk ? PARAM_SPK_PSYCHO_BASS_ORIGINAL_LEVEL
-              : PARAM_HP_PSYCHO_BASS_ORIGINAL_LEVEL,
-        p.psychoBassOriginalLevel);
+void CViPER4WindowsMFX::ApplyParamsToEngine(const viper::ViPERParams &params) {
+    if (!engine_) return;
+    engine_->ApplyParams(params);
 }

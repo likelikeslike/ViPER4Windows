@@ -42,8 +42,8 @@ class TonePage extends StatelessWidget {
     return EffectCard(
       title: l.viperBass,
       masterEnabled: state.masterEnabled,
-      enabled: state.active.bass.enabled,
-      onToggle: (v) => state.update((s) => s.bass.enabled = v),
+      enabled: state.active.bass.enable,
+      onToggle: (v) => state.update((s) => s.bass.enable = v),
       child: Column(
         children: [
           const SizedBox(height: 8),
@@ -81,6 +81,9 @@ class TonePage extends StatelessWidget {
               max: 135,
               divisions: 135,
               valueFormatter: (v) => '${v.round() + 15}Hz',
+              toDisplay: (v) => v + 15,
+              fromDisplay: (v) => v - 15,
+              unit: 'Hz',
               onChanged: (v) =>
                   state.update((s) => s.bass.frequency = v.round()),
             ),
@@ -90,6 +93,10 @@ class TonePage extends StatelessWidget {
             min: 50,
             max: 1000,
             valueFormatter: (v) => '${(v / 100).toStringAsFixed(1)}x',
+            toDisplay: (v) => v / 100,
+            fromDisplay: (v) => v * 100,
+            unit: 'x',
+            decimals: 1,
             onChanged: (v) => state.update((s) => s.bass.gain = v.round()),
           ),
           Row(
@@ -119,8 +126,8 @@ class TonePage extends StatelessWidget {
     return EffectCard(
       title: l.viperBassMono,
       masterEnabled: state.masterEnabled,
-      enabled: state.active.bassMono.enabled,
-      onToggle: (v) => state.update((s) => s.bassMono.enabled = v),
+      enabled: state.active.bassMono.enable,
+      onToggle: (v) => state.update((s) => s.bassMono.enable = v),
       child: Column(
         children: [
           const SizedBox(height: 8),
@@ -158,6 +165,9 @@ class TonePage extends StatelessWidget {
               max: 135,
               divisions: 135,
               valueFormatter: (v) => '${v.round() + 15}Hz',
+              toDisplay: (v) => v + 15,
+              fromDisplay: (v) => v - 15,
+              unit: 'Hz',
               onChanged: (v) =>
                   state.update((s) => s.bassMono.frequency = v.round()),
             ),
@@ -167,6 +177,10 @@ class TonePage extends StatelessWidget {
             min: 50,
             max: 1000,
             valueFormatter: (v) => '${(v / 100).toStringAsFixed(1)}x',
+            toDisplay: (v) => v / 100,
+            fromDisplay: (v) => v * 100,
+            unit: 'x',
+            decimals: 1,
             onChanged: (v) => state.update((s) => s.bassMono.gain = v.round()),
           ),
           Row(
@@ -195,48 +209,53 @@ class TonePage extends StatelessWidget {
     return EffectCard(
       title: l.psychoBass,
       masterEnabled: state.masterEnabled,
-      enabled: state.active.psychoBass.enabled,
-      onToggle: (v) => state.update((s) => s.psychoBass.enabled = v),
+      enabled: state.active.psychoacousticBass.enable,
+      onToggle: (v) => state.update((s) => s.psychoacousticBass.enable = v),
       child: Column(
         children: [
           const SizedBox(height: 8),
           LabeledSlider(
             label: l.cutoff,
-            value: state.active.psychoBass.cutoff.toDouble(),
+            value: state.active.psychoacousticBass.cutoff.toDouble(),
             min: 60,
             max: 150,
             valueFormatter: (v) => '${v.round()} Hz',
+            unit: 'Hz',
             onChanged: (v) =>
-                state.update((s) => s.psychoBass.cutoff = v.round()),
+                state.update((s) => s.psychoacousticBass.cutoff = v.round()),
           ),
           LabeledSlider(
             label: l.intensity,
-            value: state.active.psychoBass.intensity.toDouble(),
+            value: state.active.psychoacousticBass.intensity.toDouble(),
             min: 0,
             max: 100,
             divisions: 100,
             valueFormatter: (v) => '${v.round()}%',
+            unit: '%',
             onChanged: (v) =>
-                state.update((s) => s.psychoBass.intensity = v.round()),
+                state.update((s) => s.psychoacousticBass.intensity = v.round()),
           ),
           LabeledSlider(
             label: l.harmonicOrder,
-            value: state.active.psychoBass.harmonicOrder.toDouble(),
+            value: state.active.psychoacousticBass.harmonicOrder.toDouble(),
             min: 2,
             max: 5,
             divisions: 3,
-            onChanged: (v) =>
-                state.update((s) => s.psychoBass.harmonicOrder = v.round()),
+            onChanged: (v) => state.update(
+              (s) => s.psychoacousticBass.harmonicOrder = v.round(),
+            ),
           ),
           LabeledSlider(
             label: l.originalLevel,
-            value: state.active.psychoBass.originalLevel.toDouble(),
+            value: state.active.psychoacousticBass.originalLevel.toDouble(),
             min: 0,
             max: 100,
             divisions: 100,
             valueFormatter: (v) => '${v.round()}%',
-            onChanged: (v) =>
-                state.update((s) => s.psychoBass.originalLevel = v.round()),
+            unit: '%',
+            onChanged: (v) => state.update(
+              (s) => s.psychoacousticBass.originalLevel = v.round(),
+            ),
           ),
         ],
       ),
@@ -247,8 +266,8 @@ class TonePage extends StatelessWidget {
     return EffectCard(
       title: l.viperClarity,
       masterEnabled: state.masterEnabled,
-      enabled: state.active.clarity.enabled,
-      onToggle: (v) => state.update((s) => s.clarity.enabled = v),
+      enabled: state.active.clarity.enable,
+      onToggle: (v) => state.update((s) => s.clarity.enable = v),
       child: Column(
         children: [
           const SizedBox(height: 8),
@@ -284,6 +303,10 @@ class TonePage extends StatelessWidget {
             min: 0,
             max: 450,
             valueFormatter: (v) => '${(v / 100).toStringAsFixed(1)}x',
+            toDisplay: (v) => v / 100,
+            fromDisplay: (v) => v * 100,
+            unit: 'x',
+            decimals: 1,
             onChanged: (v) => state.update((s) => s.clarity.gain = v.round()),
           ),
         ],
@@ -295,28 +318,32 @@ class TonePage extends StatelessWidget {
     return EffectCard(
       title: l.spectrumExtension,
       masterEnabled: state.masterEnabled,
-      enabled: state.active.vse.enabled,
-      onToggle: (v) => state.update((s) => s.vse.enabled = v),
+      enabled: state.active.spectrumExtension.enable,
+      onToggle: (v) => state.update((s) => s.spectrumExtension.enable = v),
       child: Column(
         children: [
           const SizedBox(height: 8),
           LabeledSlider(
             label: l.strength,
-            value: state.active.vse.strength.toDouble(),
+            value: state.active.spectrumExtension.strength.toDouble(),
             min: 2200,
             max: 8200,
             divisions: 1200,
             valueFormatter: (v) => '${v.round()} Hz',
-            onChanged: (v) => state.update((s) => s.vse.strength = v.round()),
+            unit: 'Hz',
+            onChanged: (v) =>
+                state.update((s) => s.spectrumExtension.strength = v.round()),
           ),
           LabeledSlider(
             label: l.exciter,
-            value: state.active.vse.exciter.toDouble(),
+            value: state.active.spectrumExtension.exciter.toDouble(),
             min: 0,
             max: 100,
             divisions: 100,
             valueFormatter: (v) => '${v.round()}%',
-            onChanged: (v) => state.update((s) => s.vse.exciter = v.round()),
+            unit: '%',
+            onChanged: (v) =>
+                state.update((s) => s.spectrumExtension.exciter = v.round()),
           ),
         ],
       ),
@@ -324,7 +351,7 @@ class TonePage extends StatelessWidget {
   }
 
   Widget _buildTubeSimulator(ViperState state, S l) {
-    final active = state.active.tube.enabled && state.masterEnabled;
+    final active = state.active.tubeSimulator.enable && state.masterEnabled;
     return AnimatedOpacity(
       opacity: state.masterEnabled ? 1.0 : 0.5,
       duration: const Duration(milliseconds: 200),
@@ -355,9 +382,9 @@ class TonePage extends StatelessWidget {
               ),
             ),
             ToggleSwitch(
-              checked: state.active.tube.enabled,
+              checked: state.active.tubeSimulator.enable,
               onChanged: state.masterEnabled
-                  ? (v) => state.update((s) => s.tube.enabled = v)
+                  ? (v) => state.update((s) => s.tubeSimulator.enable = v)
                   : null,
             ),
           ],
@@ -370,8 +397,8 @@ class TonePage extends StatelessWidget {
     return EffectCard(
       title: l.analogX,
       masterEnabled: state.masterEnabled,
-      enabled: state.active.analog.enabled,
-      onToggle: (v) => state.update((s) => s.analog.enabled = v),
+      enabled: state.active.analogX.enable,
+      onToggle: (v) => state.update((s) => s.analogX.enable = v),
       child: Column(
         children: [
           const SizedBox(height: 8),
@@ -386,14 +413,14 @@ class TonePage extends StatelessWidget {
               ),
               Expanded(
                 child: ComboBox<int>(
-                  value: state.active.analog.mode,
+                  value: state.active.analogX.mode,
                   items: [
                     ComboBoxItem(value: 0, child: Text(l.mild)),
                     ComboBoxItem(value: 1, child: Text(l.medium)),
                     ComboBoxItem(value: 2, child: Text(l.strong)),
                   ],
                   onChanged: (v) {
-                    if (v != null) state.update((s) => s.analog.mode = v);
+                    if (v != null) state.update((s) => s.analogX.mode = v);
                   },
                   isExpanded: true,
                 ),

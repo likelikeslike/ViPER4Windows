@@ -1,4 +1,5 @@
 import 'dart:ffi';
+import 'dart:isolate';
 
 import 'package:ffi/ffi.dart';
 import 'package:viper4windows/services/file_logger.dart';
@@ -187,27 +188,27 @@ final class _GUID extends Struct {
 
 final class _PROPERTYKEY extends Struct {
   @Uint32()
-  external int fmtid_data1;
+  external int fmtidData1;
   @Uint16()
-  external int fmtid_data2;
+  external int fmtidData2;
   @Uint16()
-  external int fmtid_data3;
+  external int fmtidData3;
   @Uint8()
-  external int fmtid_data4_0;
+  external int fmtidData40;
   @Uint8()
-  external int fmtid_data4_1;
+  external int fmtidData41;
   @Uint8()
-  external int fmtid_data4_2;
+  external int fmtidData42;
   @Uint8()
-  external int fmtid_data4_3;
+  external int fmtidData43;
   @Uint8()
-  external int fmtid_data4_4;
+  external int fmtidData44;
   @Uint8()
-  external int fmtid_data4_5;
+  external int fmtidData45;
   @Uint8()
-  external int fmtid_data4_6;
+  external int fmtidData46;
   @Uint8()
-  external int fmtid_data4_7;
+  external int fmtidData47;
   @Uint32()
   external int pid;
 }
@@ -222,6 +223,12 @@ class DeviceDetectionService {
   late final _CoUninitializeDart _coUninitialize;
   late final _PropVariantClearDart _propVariantClear;
   bool _comInitialized = false;
+
+  ({String id, String name, bool isHeadphone}) _lastResult = (
+    id: '',
+    name: '',
+    isHeadphone: false,
+  );
 
   DeviceDetectionService() {
     final ole32 = DynamicLibrary.open('ole32.dll');
@@ -246,10 +253,35 @@ class DeviceDetectionService {
   ({String id, String name, bool isHeadphone}) detectActiveDevice() {
     const fallback = (id: '', name: '', isHeadphone: false);
     try {
-      return _detectActiveDeviceImpl();
+      _lastResult = _detectActiveDeviceImpl();
+      return _lastResult;
     } catch (e) {
       _log.error('detectActiveDevice failed: $e');
       return fallback;
+    }
+  }
+
+  Future<({String id, String name, bool isHeadphone})>
+  detectActiveDeviceAsync() async {
+    try {
+      final result = await Isolate.run(_detectDeviceInIsolate);
+      _lastResult = result;
+      return result;
+    } catch (e) {
+      _log.error('detectActiveDeviceAsync failed: $e');
+      return _lastResult;
+    }
+  }
+
+  static ({String id, String name, bool isHeadphone}) _detectDeviceInIsolate() {
+    const fallback = (id: '', name: '', isHeadphone: false);
+    final svc = DeviceDetectionService();
+    try {
+      return svc._detectActiveDeviceImpl();
+    } catch (_) {
+      return fallback;
+    } finally {
+      svc.dispose();
     }
   }
 
@@ -341,17 +373,17 @@ class DeviceDetectionService {
     int pid,
   ) {
     final pkey = calloc<_PROPERTYKEY>();
-    pkey.ref.fmtid_data1 = fmtId.ref.data1;
-    pkey.ref.fmtid_data2 = fmtId.ref.data2;
-    pkey.ref.fmtid_data3 = fmtId.ref.data3;
-    pkey.ref.fmtid_data4_0 = fmtId.ref.data4_0;
-    pkey.ref.fmtid_data4_1 = fmtId.ref.data4_1;
-    pkey.ref.fmtid_data4_2 = fmtId.ref.data4_2;
-    pkey.ref.fmtid_data4_3 = fmtId.ref.data4_3;
-    pkey.ref.fmtid_data4_4 = fmtId.ref.data4_4;
-    pkey.ref.fmtid_data4_5 = fmtId.ref.data4_5;
-    pkey.ref.fmtid_data4_6 = fmtId.ref.data4_6;
-    pkey.ref.fmtid_data4_7 = fmtId.ref.data4_7;
+    pkey.ref.fmtidData1 = fmtId.ref.data1;
+    pkey.ref.fmtidData2 = fmtId.ref.data2;
+    pkey.ref.fmtidData3 = fmtId.ref.data3;
+    pkey.ref.fmtidData40 = fmtId.ref.data4_0;
+    pkey.ref.fmtidData41 = fmtId.ref.data4_1;
+    pkey.ref.fmtidData42 = fmtId.ref.data4_2;
+    pkey.ref.fmtidData43 = fmtId.ref.data4_3;
+    pkey.ref.fmtidData44 = fmtId.ref.data4_4;
+    pkey.ref.fmtidData45 = fmtId.ref.data4_5;
+    pkey.ref.fmtidData46 = fmtId.ref.data4_6;
+    pkey.ref.fmtidData47 = fmtId.ref.data4_7;
     pkey.ref.pid = pid;
 
     final propVariant = calloc<Uint8>(24);
@@ -461,17 +493,17 @@ class DeviceDetectionService {
 
   int _readFormFactorProperty(Pointer pPropertyStore) {
     final pkey = calloc<_PROPERTYKEY>();
-    pkey.ref.fmtid_data1 = _pkeyFormFactorFmtId.ref.data1;
-    pkey.ref.fmtid_data2 = _pkeyFormFactorFmtId.ref.data2;
-    pkey.ref.fmtid_data3 = _pkeyFormFactorFmtId.ref.data3;
-    pkey.ref.fmtid_data4_0 = _pkeyFormFactorFmtId.ref.data4_0;
-    pkey.ref.fmtid_data4_1 = _pkeyFormFactorFmtId.ref.data4_1;
-    pkey.ref.fmtid_data4_2 = _pkeyFormFactorFmtId.ref.data4_2;
-    pkey.ref.fmtid_data4_3 = _pkeyFormFactorFmtId.ref.data4_3;
-    pkey.ref.fmtid_data4_4 = _pkeyFormFactorFmtId.ref.data4_4;
-    pkey.ref.fmtid_data4_5 = _pkeyFormFactorFmtId.ref.data4_5;
-    pkey.ref.fmtid_data4_6 = _pkeyFormFactorFmtId.ref.data4_6;
-    pkey.ref.fmtid_data4_7 = _pkeyFormFactorFmtId.ref.data4_7;
+    pkey.ref.fmtidData1 = _pkeyFormFactorFmtId.ref.data1;
+    pkey.ref.fmtidData2 = _pkeyFormFactorFmtId.ref.data2;
+    pkey.ref.fmtidData3 = _pkeyFormFactorFmtId.ref.data3;
+    pkey.ref.fmtidData40 = _pkeyFormFactorFmtId.ref.data4_0;
+    pkey.ref.fmtidData41 = _pkeyFormFactorFmtId.ref.data4_1;
+    pkey.ref.fmtidData42 = _pkeyFormFactorFmtId.ref.data4_2;
+    pkey.ref.fmtidData43 = _pkeyFormFactorFmtId.ref.data4_3;
+    pkey.ref.fmtidData44 = _pkeyFormFactorFmtId.ref.data4_4;
+    pkey.ref.fmtidData45 = _pkeyFormFactorFmtId.ref.data4_5;
+    pkey.ref.fmtidData46 = _pkeyFormFactorFmtId.ref.data4_6;
+    pkey.ref.fmtidData47 = _pkeyFormFactorFmtId.ref.data4_7;
     pkey.ref.pid = _pkeyFormFactorPid;
 
     // PROPVARIANT is 24 bytes on x64 (16-byte vt + 8-byte pad/data)

@@ -8,6 +8,7 @@ import 'package:viper4windows/models/viper_state.dart';
 import 'package:viper4windows/theme/app_colors.dart';
 import 'package:viper4windows/widgets/effect_card.dart';
 import 'package:viper4windows/widgets/labeled_slider.dart';
+import 'package:viper4windows/widgets/number_input_dialog.dart';
 
 class EqualizerPage extends StatefulWidget {
   const EqualizerPage({super.key});
@@ -53,15 +54,6 @@ class _EqualizerPageState extends State<EqualizerPage> {
     setState(() => _selectedPreset = 5);
   }
 
-  void _adjustBand(ViperState state, int index, double delta) {
-    final current = state.active.eq.bands[index];
-    final next = double.parse(
-      (current + delta).clamp(-12.0, 12.0).toStringAsFixed(1),
-    );
-    state.sendEQBand(index, next);
-    setState(() => _selectedPreset = -1);
-  }
-
   @override
   Widget build(BuildContext context) {
     final state = context.watch<ViperState>();
@@ -84,8 +76,8 @@ class _EqualizerPageState extends State<EqualizerPage> {
         EffectCard(
           title: l.firEqualizer,
           masterEnabled: state.masterEnabled,
-          enabled: state.active.eq.enabled,
-          onToggle: (v) => state.update((s) => s.eq.enabled = v),
+          enabled: state.active.eq.enable,
+          onToggle: (v) => state.update((s) => s.eq.enable = v),
           child: _buildContent(state, bandCount, labels, l),
         ),
         _buildDynEq(state, l),
@@ -182,13 +174,6 @@ class _EqualizerPageState extends State<EqualizerPage> {
   Widget _buildPresetPicker(ViperState state, S l) {
     final userPresets = state.eqPresetsForCurrentBandCount();
     final items = <ComboBoxItem<int>>[
-      ComboBoxItem<int>(
-        value: -1,
-        child: Text(
-          l.custom,
-          style: TextStyle(fontSize: 12, color: AppColors.enabledText),
-        ),
-      ),
       ...List.generate(EqPresets.builtins.length, (i) {
         return ComboBoxItem<int>(
           value: i,
@@ -223,7 +208,11 @@ class _EqualizerPageState extends State<EqualizerPage> {
         SizedBox(
           width: 180,
           child: ComboBox<int>(
-            value: _selectedPreset,
+            value: _selectedPreset == -1 ? null : _selectedPreset,
+            placeholder: Text(
+              l.custom,
+              style: TextStyle(fontSize: 12, color: AppColors.enabledText),
+            ),
             items: items,
             onChanged: (v) {
               if (v == null) return;
@@ -233,8 +222,6 @@ class _EqualizerPageState extends State<EqualizerPage> {
                   state.loadEqPreset(userPresets[idx]);
                   setState(() => _selectedPreset = v);
                 }
-              } else if (v == -1) {
-                setState(() => _selectedPreset = -1);
               } else {
                 _applyPreset(state, v);
               }
@@ -328,25 +315,30 @@ class _EqualizerPageState extends State<EqualizerPage> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        SizedBox(
-          width: 28,
-          height: 20,
-          child: IconButton(
-            icon: const Icon(FluentIcons.add, size: 9),
-            onPressed: clamped >= 12.0
-                ? null
-                : () => _adjustBand(state, i, 0.1),
-            style: ButtonStyle(
-              padding: WidgetStateProperty.all(EdgeInsets.zero),
-            ),
+        GestureDetector(
+          onTap: () => NumberInputDialog.show(
+            context,
+            label: label,
+            value: clamped,
+            min: -12.0,
+            max: 12.0,
+            decimals: 1,
+            unit: 'dB',
+            onCommit: (v) {
+              state.sendEQBand(i, v);
+              setState(() => _selectedPreset = -1);
+            },
           ),
-        ),
-        Text(
-          clamped.toStringAsFixed(1),
-          style: const TextStyle(
-            fontSize: 9,
-            color: AppColors.accent,
-            fontFamily: 'Inter',
+          child: MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: Text(
+              clamped.toStringAsFixed(1),
+              style: const TextStyle(
+                fontSize: 9,
+                color: AppColors.accent,
+                fontFamily: 'Inter',
+              ),
+            ),
           ),
         ),
         const SizedBox(height: 2),
@@ -368,20 +360,6 @@ class _EqualizerPageState extends State<EqualizerPage> {
                 thumbColor: WidgetStateProperty.all(AppColors.accent),
                 margin: EdgeInsets.zero,
               ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 2),
-        SizedBox(
-          width: 28,
-          height: 20,
-          child: IconButton(
-            icon: const Icon(FluentIcons.remove, size: 9),
-            onPressed: clamped <= -12.0
-                ? null
-                : () => _adjustBand(state, i, -0.1),
-            style: ButtonStyle(
-              padding: WidgetStateProperty.all(EdgeInsets.zero),
             ),
           ),
         ),
@@ -461,8 +439,8 @@ class _EqualizerPageState extends State<EqualizerPage> {
     return EffectCard(
       title: l.dynamicEq,
       masterEnabled: state.masterEnabled,
-      enabled: state.active.dynamicEq.enabled,
-      onToggle: (v) => state.update((s) => s.dynamicEq.enabled = v),
+      enabled: state.active.dynamicEq.enable,
+      onToggle: (v) => state.update((s) => s.dynamicEq.enable = v),
       child: Column(
         children: [
           const SizedBox(height: 8),
@@ -540,7 +518,7 @@ class _EqualizerPageState extends State<EqualizerPage> {
                     ),
                   );
                 }),
-                if (bandCount < 8 &&
+                if (bandCount < 10 &&
                     (bandCount == 0 ||
                         state.active.dynamicEq.freqs[bandCount - 1] < 20000))
                   Padding(
@@ -579,6 +557,7 @@ class _EqualizerPageState extends State<EqualizerPage> {
                   max: maxFreq.toDouble(),
                   divisions: ((maxFreq - minFreq) / 5).round().clamp(1, 100000),
                   valueFormatter: (v) => _dynEqFreqLabel(v.round()),
+                  unit: 'Hz',
                   onChanged: (v) =>
                       state.update((s) => s.dynamicEq.freqs[band] = v.round()),
                 );
@@ -590,6 +569,9 @@ class _EqualizerPageState extends State<EqualizerPage> {
               min: 50,
               max: 800,
               valueFormatter: (v) => (v / 100).toStringAsFixed(1),
+              toDisplay: (v) => v / 100,
+              fromDisplay: (v) => v * 100,
+              decimals: 1,
               onChanged: (v) =>
                   state.update((s) => s.dynamicEq.qs[band] = v.round()),
             ),
@@ -599,6 +581,10 @@ class _EqualizerPageState extends State<EqualizerPage> {
               min: -120,
               max: 120,
               valueFormatter: (v) => '${(v / 10).toStringAsFixed(1)} dB',
+              toDisplay: (v) => v / 10,
+              fromDisplay: (v) => v * 10,
+              unit: 'dB',
+              decimals: 1,
               onChanged: (v) =>
                   state.update((s) => s.dynamicEq.gains[band] = v.round()),
             ),
@@ -608,6 +594,10 @@ class _EqualizerPageState extends State<EqualizerPage> {
               min: -800,
               max: 0,
               valueFormatter: (v) => '${(v ~/ 10)} dB',
+              toDisplay: (v) => v / 10,
+              fromDisplay: (v) => v * 10,
+              unit: 'dB',
+              decimals: 0,
               onChanged: (v) =>
                   state.update((s) => s.dynamicEq.thresholds[band] = v.round()),
             ),
@@ -617,6 +607,7 @@ class _EqualizerPageState extends State<EqualizerPage> {
               min: 1,
               max: 100,
               valueFormatter: (v) => '${v.round()} ms',
+              unit: 'ms',
               onChanged: (v) =>
                   state.update((s) => s.dynamicEq.attacks[band] = v.round()),
             ),
@@ -626,6 +617,7 @@ class _EqualizerPageState extends State<EqualizerPage> {
               min: 10,
               max: 500,
               valueFormatter: (v) => '${v.round()} ms',
+              unit: 'ms',
               onChanged: (v) =>
                   state.update((s) => s.dynamicEq.releases[band] = v.round()),
             ),

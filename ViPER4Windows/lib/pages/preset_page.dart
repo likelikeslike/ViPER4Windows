@@ -50,11 +50,94 @@ class _PresetPageState extends State<PresetPage> {
     );
   }
 
+  void _confirmUpdate(ViperState state, S l, String name) {
+    showDialog(
+      context: context,
+      builder: (ctx) => ContentDialog(
+        constraints: const BoxConstraints(maxWidth: 360, maxHeight: 200),
+        title: Text(l.presetUpdateTitle),
+        content: Text(l.presetUpdateConfirm(name)),
+        actions: [
+          Button(child: Text(l.cancel), onPressed: () => Navigator.pop(ctx)),
+          FilledButton(
+            onPressed: () {
+              state.savePreset(name);
+              Navigator.pop(ctx);
+            },
+            child: Text(l.update),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmLoad(ViperState state, S l, String name) {
+    showDialog(
+      context: context,
+      builder: (ctx) => ContentDialog(
+        constraints: const BoxConstraints(maxWidth: 360, maxHeight: 200),
+        title: Text(l.presetLoadTitle),
+        content: Text(l.presetLoadConfirm(name)),
+        actions: [
+          Button(child: Text(l.cancel), onPressed: () => Navigator.pop(ctx)),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              final result = state.loadPreset(name);
+              if (result >= 0) {
+                final target = result == 1 ? l.speaker : l.headphone;
+                displayInfoBar(
+                  context,
+                  builder: (ctx, close) => InfoBar(
+                    title: Text(l.presetLoadedTo(name, target)),
+                    severity: InfoBarSeverity.success,
+                    action: IconButton(
+                      icon: const Icon(FluentIcons.clear),
+                      onPressed: close,
+                    ),
+                  ),
+                );
+              }
+            },
+            child: Text(l.load),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDelete(ViperState state, S l, String name) {
+    showDialog(
+      context: context,
+      builder: (ctx) => ContentDialog(
+        constraints: const BoxConstraints(maxWidth: 360, maxHeight: 200),
+        title: Text(l.presetDeleteTitle),
+        content: Text(l.presetDeleteConfirm(name)),
+        actions: [
+          Button(child: Text(l.cancel), onPressed: () => Navigator.pop(ctx)),
+          FilledButton(
+            style: ButtonStyle(
+              backgroundColor: WidgetStateProperty.all(const Color(0xFFCF6679)),
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              state.deletePreset(name);
+            },
+            child: Text(l.delete),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = context.watch<ViperState>();
     final l = S.of(context)!;
-    final modeLabel = state.fxType == 0 ? l.headphone : l.speaker;
+    // Wave C single-mode UI: the per-preset mode badge from v1 is gone
+    // (presets are single-mode v2 documents); the menu-bar icon /
+    // status badge in app.dart still shows headphone-vs-speaker.
+    final modeLabel = state.isCurrentDeviceHeadphone ? l.headphone : l.speaker;
 
     return ScaffoldPage.scrollable(
       padding: const EdgeInsets.all(20),
@@ -201,9 +284,7 @@ class _PresetPageState extends State<PresetPage> {
       child: Row(
         children: [
           Icon(
-            state.presetIsHeadphone(name)
-                ? FluentIcons.headset
-                : FluentIcons.volume2,
+            FluentIcons.text_document_edit,
             size: 14,
             color: AppColors.subtitleText,
           ),
@@ -229,24 +310,17 @@ class _PresetPageState extends State<PresetPage> {
           ),
           const SizedBox(width: 4),
           IconButton(
-            icon: Icon(FluentIcons.play, size: 14, color: AppColors.accent),
-            onPressed: () {
-              final result = state.loadPreset(name);
-              if (result >= 0) {
-                final target = result == 1 ? l.speaker : l.headphone;
-                displayInfoBar(
-                  context,
-                  builder: (ctx, close) => InfoBar(
-                    title: Text(l.presetLoadedTo(name, target)),
-                    severity: InfoBarSeverity.success,
-                    action: IconButton(
-                      icon: const Icon(FluentIcons.clear),
-                      onPressed: close,
-                    ),
-                  ),
-                );
-              }
-            },
+            icon: const Icon(
+              FluentIcons.sync,
+              size: 14,
+              color: Color(0xFFB794F6),
+            ),
+            onPressed: () => _confirmUpdate(state, l, name),
+          ),
+          const SizedBox(width: 4),
+          IconButton(
+            icon: Icon(FluentIcons.download, size: 14, color: AppColors.accent),
+            onPressed: () => _confirmLoad(state, l, name),
           ),
           const SizedBox(width: 4),
           IconButton(
@@ -255,7 +329,7 @@ class _PresetPageState extends State<PresetPage> {
               size: 14,
               color: Color(0xFFCF6679),
             ),
-            onPressed: () => state.deletePreset(name),
+            onPressed: () => _confirmDelete(state, l, name),
           ),
         ],
       ),
