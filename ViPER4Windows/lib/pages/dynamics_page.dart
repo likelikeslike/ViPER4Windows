@@ -810,13 +810,13 @@ class _DynamicsPageState extends State<DynamicsPage> {
             children: [
               FilledButton(
                 onPressed: () async {
-                  final file = await FilePicker.pickFile(
+                  final files = await FilePicker.pickFiles(
                     dialogTitle: l.importDdcProfile,
                     type: FileType.custom,
                     allowedExtensions: ['vdc'],
                   );
-                  if (file?.path != null) {
-                    state.importDdc(file!.path!);
+                  for (final file in files) {
+                    if (file.path != null) state.importDdc(file.path!);
                   }
                 },
                 child: Text(l.importBtn),
@@ -896,13 +896,13 @@ class _DynamicsPageState extends State<DynamicsPage> {
             children: [
               FilledButton(
                 onPressed: () async {
-                  final file = await FilePicker.pickFile(
+                  final files = await FilePicker.pickFiles(
                     dialogTitle: l.importConvolverKernel,
                     type: FileType.custom,
                     allowedExtensions: ['wav', 'irs'],
                   );
-                  if (file?.path != null) {
-                    state.importKernel(file!.path!);
+                  for (final file in files) {
+                    if (file.path != null) state.importKernel(file.path!);
                   }
                 },
                 child: Text(l.importBtn),
