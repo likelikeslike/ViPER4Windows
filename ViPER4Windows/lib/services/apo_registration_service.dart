@@ -130,7 +130,7 @@ Set-ItemProperty -Path $apoRegPath -Name "APOInterface0" -Value "{FD7F2B29-24D0-
     _log.info('Registering endpoint: $endpointId');
     try {
       final ok = await _nativeChannel.invokeMethod<bool>('registerEndpoint', {
-        'endpointId': endpointId,
+        'endpoint_id': endpointId,
       });
       if (ok == true) {
         await _restartAudioService();
@@ -147,7 +147,7 @@ Set-ItemProperty -Path $apoRegPath -Name "APOInterface0" -Value "{FD7F2B29-24D0-
     _log.info('Unregistering endpoint: $endpointId');
     try {
       final ok = await _nativeChannel.invokeMethod<bool>('unregisterEndpoint', {
-        'endpointId': endpointId,
+        'endpoint_id': endpointId,
       });
       if (ok == true) {
         await _restartAudioService();
