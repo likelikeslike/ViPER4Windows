@@ -57,7 +57,7 @@ Effects are grouped by the page they live on in the UI:
 - Windows 10 version 1809 or later (x64)
 - Tested on Windows 10, theoretically supports Windows 11
 - Visual Studio 2022 or later with C++ desktop workload (for building)
-- Flutter SDK 3.11+ (for building the UI)
+- Flutter 3.47+ (for building the UI)
 - Inno Setup 6 (for building the installer)
 
 ## Installation
@@ -102,7 +102,11 @@ ViPER4Mac — a preset saved on one platform loads identically on the others.
 {
   "schemaVersion": 2,
   "name": "My Preset",
-  "equalizer": { "enable": true, "bandCount": 10, "bands": [3.0, 2.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 2.0, 3.0] },
+  "equalizer": {
+    "enable": true,
+    "bandCount": 10,
+    "bands": [3.0, 2.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 2.0, 3.0]
+  },
   "bass": { "enable": true, "mode": 0, "frequency": 55, "gain": 60 },
   "ddc": { "enable": false, "device": "" }
 }
@@ -170,6 +174,9 @@ shortcut, and cleans up registry entries.
 
 The data folder in `%APPDATA%\ViPER4Windows\` is not removed automatically; delete it manually if
 you want to clear your presets and profiles.
+
+If you chose "Add v4w-cli to PATH" during installation, it is left in the system `Path` after uninstall,
+remove it manually from System Properties > Environment Variables if you want to clear it.
 
 ## Credits
 
