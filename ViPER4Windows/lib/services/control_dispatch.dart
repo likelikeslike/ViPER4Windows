@@ -84,8 +84,9 @@ class ControlDispatch {
   }
 
   List<String> _device(List<String> a) {
-    if (a.isEmpty)
+    if (a.isEmpty) {
       return const ['ERR usage: device <current|list|show|delete>'];
+    }
     switch (a.first) {
       case 'current':
         return [

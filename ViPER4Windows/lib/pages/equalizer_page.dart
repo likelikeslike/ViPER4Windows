@@ -642,8 +642,9 @@ class _EqualizerPageState extends State<EqualizerPage> {
                       ComboBoxItem(value: 2, child: Text(l.highShelf)),
                     ],
                     onChanged: (v) {
-                      if (v != null)
+                      if (v != null) {
                         state.update((s) => s.dynamicEq.filterTypes[band] = v);
+                      }
                     },
                     isExpanded: true,
                   ),

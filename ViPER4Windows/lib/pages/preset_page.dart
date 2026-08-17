@@ -219,13 +219,13 @@ class _PresetPageState extends State<PresetPage> {
                   const SizedBox(width: 8),
                   Button(
                     onPressed: () async {
-                      final result = await FilePicker.pickFiles(
+                      final file = await FilePicker.pickFile(
                         dialogTitle: l.importPreset,
                         type: FileType.custom,
                         allowedExtensions: ['json'],
                       );
-                      if (result != null && result.files.single.path != null) {
-                        state.importPreset(result.files.single.path!);
+                      if (file?.path != null) {
+                        state.importPreset(file!.path!);
                       }
                     },
                     child: Text(l.importBtn),
