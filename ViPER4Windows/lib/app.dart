@@ -340,9 +340,10 @@ class _ShellState extends State<_Shell> with WindowListener {
   Widget _buildLanguageMenu(BuildContext context) {
     final locale = Localizations.localeOf(context);
     final isChinese = locale.languageCode == 'zh';
+    final isSimplified = isChinese && locale.countryCode == 'CN';
 
     return Tooltip(
-      message: 'Language / 語言',
+      message: 'Language / 语言',
       child: DropDownButton(
         leading: const Icon(FluentIcons.locale_language, size: 14),
         title: Text(
@@ -352,8 +353,14 @@ class _ShellState extends State<_Shell> with WindowListener {
         items: [
           MenuFlyoutItem(
             leading: const Icon(FluentIcons.locale_language, size: 14),
-            text: const Text('繁體中文 / Chinese'),
-            selected: isChinese,
+            text: const Text('简体中文 / Simplified'),
+            selected: isSimplified,
+            onPressed: () => widget.onLocaleChanged(const Locale('zh', 'CN')),
+          ),
+          MenuFlyoutItem(
+            leading: const Icon(FluentIcons.locale_language, size: 14),
+            text: const Text('繁體中文 / Traditional'),
+            selected: isChinese && !isSimplified,
             onPressed: () => widget.onLocaleChanged(const Locale('zh', 'TW')),
           ),
           MenuFlyoutItem(
