@@ -1,0 +1,289 @@
+{
+  "@@locale": "zh_CN",
+  "appTitle": "ViPER4Windows",
+  "navOutput": "输出",
+  "navEqualizer": "均衡器",
+  "navTone": "音色",
+  "navSpatial": "空间",
+  "navDynamics": "动态",
+  "navPresets": "预设",
+  "navDriverStatus": "驱动状态",
+  "master": "总开关",
+  "headphone": "耳机",
+  "speaker": "扬声器",
+  "trayShow": "显示",
+  "trayQuit": "结束",
+  "mode": "模式",
+  "frequency": "频率",
+  "gain": "增益（效果强度）",
+  "strength": "强度",
+  "quality": "质量",
+  "depth": "深度",
+  "delay": "延迟",
+  "preset": "预设",
+  "custom": "自定义",
+  "file": "文档",
+  "none": "无",
+  "cancel": "取消",
+  "save": "保存",
+  "load": "加载",
+  "delete": "删除",
+  "update": "更新",
+  "importBtn": "导入",
+  "on": "开",
+  "off": "关",
+  "mild": "轻度",
+  "medium": "中度",
+  "strong": "强",
+  "presetName": "预设名称",
+  "errorGeneric": "错误：{message}",
+  "@errorGeneric": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "pageMasterLimiter": "主限制器（防爆音）",
+  "outputGain": "输出音量（最终音量）",
+  "outputPan": "左右平衡",
+  "panCenter": "居中",
+  "panRight": "右 R {value}",
+  "@panRight": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      }
+    }
+  },
+  "panLeft": "左 L {value}",
+  "@panLeft": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      }
+    }
+  },
+  "thresholdLimit": "限制阈值（越低越安全）",
+  "playbackGainControl": "自动音量补偿（提升小声片段）",
+  "maxGain": "最大补偿",
+  "outputThreshold": "输出阈值",
+  "viperDdc": "ViPER-DDC（扬声器校正）",
+  "importDdcProfile": "导入 DDC 校正文档",
+  "convolver": "卷积器（脉冲声场）",
+  "importConvolverKernel": "导入卷积内核",
+  "crossChannel": "左右声道混合",
+  "speakerOptimization": "扬声器优化",
+  "pageEqualizer": "均衡器",
+  "firEqualizer": "FIR 均衡器",
+  "bands": "频段",
+  "resetToFlat": "重置为平坦",
+  "saveEqPreset": "保存均衡器预设",
+  "pageTone": "音色",
+  "viperBass": "ViPER 低音增强",
+  "bassNatural": "自然",
+  "bassPureBass": "纯低音（更强）",
+  "bassSubwoofer": "重低音（最重）",
+  "antiPop": "淡入防爆音",
+  "viperBassMono": "低音单声道（小扬声器适用）",
+  "viperClarity": "清晰度（人声／高频）",
+  "clarityNatural": "自然",
+  "clarityOZone": "OZone",
+  "clarityXHiFi": "XHiFi",
+  "spectrumExtension": "高频延伸",
+  "exciter": "激励",
+  "tubeSimulator": "电子管模拟（6N1J）",
+  "analogX": "AnalogX 暖声",
+  "pageSpatial": "空间",
+  "fieldSurround": "环绕扩展",
+  "widening": "左右拉宽",
+  "midImage": "中央声像",
+  "differentialSurround": "差分环绕",
+  "diffSurroundReverse": "反转相位",
+  "headphoneSurroundPlus": "耳机环绕+",
+  "reverberation": "混响",
+  "roomSize": "房间大小",
+  "width": "宽度",
+  "dampening": "吸音",
+  "wetSignal": "效果声",
+  "drySignal": "原音",
+  "auditorySystemProtection": "听觉保护（交叉混音）",
+  "pageDynamics": "动态",
+  "dynamicSystem": "动态系统（耳机虚拟化）",
+  "xLowFreq": "低频起点",
+  "xHighFreq": "高频终点",
+  "yLowFreq": "低频增益",
+  "yHighFreq": "高频增益",
+  "sideGainLow": "低频侧声道",
+  "sideGainHigh": "高频侧声道",
+  "saveDsPreset": "保存动态系统预设",
+  "fetCompressor": "FET 压缩器（让声音更密、更大）",
+  "threshold": "压缩阈值",
+  "ratio": "压缩比",
+  "autoKnee": "自动转折",
+  "knee": "转折柔和度",
+  "kneeMulti": "转折倍率",
+  "autoGain": "自动补偿",
+  "autoAttack": "自动起始",
+  "attack": "反应速度",
+  "maxAttack": "最大起始",
+  "autoRelease": "自动释放",
+  "release": "恢复速度",
+  "maxRelease": "最大释放",
+  "crest": "峰值跟踪",
+  "adapt": "适应速度",
+  "noClip": "防削波",
+  "pagePresets": "预设",
+  "saveCurrentSettings": "将当前设置保存为预设",
+  "selectPreset": "选择预设…",
+  "loadManage": "加载／管理",
+  "importPreset": "导入预设",
+  "presetLoadedTo": "已将“{name}”加载到 {target}",
+  "@presetLoadedTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "presetUpdateTitle": "更新预设",
+  "presetUpdateConfirm": "要用当前设置覆盖“{name}”吗？",
+  "@presetUpdateConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "presetLoadTitle": "加载预设",
+  "presetLoadConfirm": "要加载“{name}”并替换当前设置吗？",
+  "@presetLoadConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "presetDeleteTitle": "删除预设",
+  "presetDeleteConfirm": "要删除“{name}”吗？",
+  "@presetDeleteConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pageDriverStatus": "驱动状态",
+  "apoStatus": "APO 状态",
+  "driver": "驱动程序",
+  "installed": "已安装",
+  "notFound": "未找到",
+  "streaming": "音频串流",
+  "active": "生效中",
+  "inactive": "未生效",
+  "samplingRate": "采样率",
+  "unknown": "未知",
+  "masterEnable": "总开关",
+  "fxMode": "效果模式",
+  "audioEndpoints": "音频端点",
+  "registerAll": "注册全部",
+  "noEndpointsFound": "未找到正在使用的播放端点。",
+  "viperRegistered": "已注册 ViPER",
+  "notRegistered": "未注册",
+  "unregister": "取消注册",
+  "register": "注册",
+  "registerAllSuccess": "已注册全部端点，音频服务已重启。若效果仍未生效，请重新启动。",
+  "registrationFailed": "注册失败。",
+  "registerSingleSuccess": "已注册，音频服务已重启。若效果仍未生效，请重新启动。",
+  "unregisterSuccess": "已取消注册，音频服务已重启。若效果仍存在，请重新启动。",
+  "unregistrationFailed": "取消注册失败。",
+  "driverInformation": "驱动信息",
+  "version": "版本",
+  "architecture": "架构",
+  "apoType": "APO 类型",
+  "ipc": "进程通信",
+  "sharedMemory": "共享内存",
+  "mfxComponent": "MFX（组件）",
+  "startAtBoot": "开机自启",
+  "statusApoActive": "APO 生效中（{sampleRate} Hz）",
+  "@statusApoActive": {
+    "placeholders": {
+      "sampleRate": {
+        "type": "int"
+      }
+    }
+  },
+  "statusApoIdle": "APO 已连接，等待音频",
+  "statusApoNotFound": "未找到 APO",
+  "navDevices": "设备",
+  "devicesTitle": "设备",
+  "deviceLabelType": "类型",
+  "deviceLabelId": "设备ID",
+  "deviceLabelLastUsed": "最近使用",
+  "deviceRenameTitle": "重命名设备",
+  "deviceRenameHint": "设备名称",
+  "deviceNoDevices": "没有已保存的设备",
+  "wetDryMix": "效果／原音",
+  "lpCutoff": "低通截止",
+  "multibandCompressor": "多段压缩器",
+  "band": "频段",
+  "crossover": "分频点",
+  "bandEnabled": "激活",
+  "dynamicEq": "动态均衡器",
+  "targetGain": "目标增益",
+  "addBand": "添加频段",
+  "deleteBandTitle": "删除频段",
+  "deleteBandContent": "要删除第 {band} 段吗？",
+  "@deleteBandContent": {
+    "placeholders": {
+      "band": {
+        "type": "int"
+      }
+    }
+  },
+  "stereoImager": "立体声声像",
+  "lowWidth": "低带宽度",
+  "midWidth": "中带宽度",
+  "highWidth": "高带宽度",
+  "lowCrossover": "低部分频",
+  "highCrossover": "高部分频",
+  "lufsTargeting": "响度标准化（LUFS）",
+  "target": "目标",
+  "psychoBass": "心理低音（用泛音模拟低音）",
+  "cutoff": "截止频率",
+  "intensity": "强度",
+  "harmonicOrder": "泛音阶数",
+  "originalLevel": "原始低音比例",
+  "speed": "速度",
+  "speedSlow": "慢",
+  "speedMedium": "中",
+  "speedFast": "快",
+  "filterType": "滤波器",
+  "peak": "峰值",
+  "lowShelf": "低频架",
+  "highShelf": "高频架",
+  "eqPresetAcoustic": "原声",
+  "eqPresetBassBooster": "低音增强",
+  "eqPresetBassReducer": "低音削弱",
+  "eqPresetClassical": "古典",
+  "eqPresetDeep": "深沉",
+  "eqPresetFlat": "平坦",
+  "eqPresetRnb": "R&B",
+  "eqPresetRock": "摇滚",
+  "eqPresetSmallSpeakers": "小扬声器",
+  "eqPresetTrebleBooster": "高音增强",
+  "eqPresetTrebleReducer": "高音削弱",
+  "eqPresetVocalBooster": "人声增强",
+  "dsDeviceExtremeHeadphoneV2": "极致耳机（v2）",
+  "dsDeviceHighEndHeadphoneV2": "高端耳机（v2）",
+  "dsDeviceCommonHeadphoneV2": "普通耳机（v2）",
+  "dsDeviceLowEndHeadphoneV2": "入门耳机（v2）",
+  "dsDeviceCommonEarphoneV2": "普通耳塞（v2）",
+  "dsDeviceExtremeHeadphoneV1": "极致耳机（v1）",
+  "dsDeviceHighEndHeadphoneV1": "高端耳机（v1）",
+  "dsDeviceCommonHeadphoneV1": "普通耳机（v1）",
+  "dsDeviceCommonEarphoneV1": "普通耳塞（v1）"
+}
